@@ -10,10 +10,10 @@ use craft\records\User;
 use yii\db\ActiveQueryInterface;
 
 /**
- * @property \yii\db\ActiveQueryInterface $site
+ * @property Site $site
  * @property User $owner
- * @property \yii\db\ActiveQueryInterface $asset
- * @property \yii\db\ActiveQueryInterface $archive
+ * @property Asset $asset
+ * @property Archive $archive
  * @property integer id
  * @property integer archiveId
  */

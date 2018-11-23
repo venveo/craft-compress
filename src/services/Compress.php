@@ -198,8 +198,6 @@ class Compress extends Component
      *
      * @param $assets Asset[]
      * @return string
-     * @throws \yii\base\Exception
-     * @throws \yii\base\InvalidConfigException
      */
     private function getHashForAssets($assets): string
     {
@@ -228,9 +226,23 @@ class Compress extends Component
      */
     public function handleAssetDeleted(Asset $asset): void
     {
-        $subQuery = FileRecord::find()->select('archiveId')->where(['=', 'assetId', $asset->id])->andWhere(['=', 'siteId', $asset->siteId]);
-//        $queryResults = Archive::find()->where(['in', 'id', $subQuery])->all();
-        ArchiveRecord::deleteAll(['in', 'id', $subQuery]);
+        // Get the files this affects and the archives. We're just going to
+        // delete the asset for the archive to prompt it to regenerate.
+        // the file records will be deleted when its asset is deleted
+        $fileRecords = FileRecord::find()->where(['=', 'assetId', $asset->id])->with('archive')->all();
+        $archiveAssets = [];
+        foreach ($fileRecords as $fileRecord) {
+            $archiveAssets[] = $fileRecord->archive->assetId;
+        }
+        $archiveAssets = array_unique($archiveAssets);
+        foreach ($archiveAssets as $archiveAsset) {
+            try {
+                \Craft::$app->elements->deleteElementById($archiveAsset);
+            } catch (\Throwable $e) {
+                Craft::error('Failed to delete an archive asset: '.$e->getMessage(), 'compress');
+                Craft::error($e->getTraceAsString(), 'compress');
+            }
+        }
     }
 
     /**
