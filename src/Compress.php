@@ -14,11 +14,14 @@ use Craft;
 use craft\base\Plugin;
 use craft\elements\Asset;
 use craft\events\ModelEvent;
+use craft\events\RegisterComponentTypesEvent;
 use craft\events\RegisterUrlRulesEvent;
+use craft\services\Utilities;
 use craft\web\twig\variables\CraftVariable;
 use craft\web\UrlManager;
 use venveo\compress\models\Settings;
 use venveo\compress\services\Compress as CompressService;
+use venveo\compress\utilities\CompressUtility;
 use venveo\compress\variables\CompressVariable;
 use yii\base\Event;
 
@@ -89,6 +92,16 @@ class Compress extends Plugin
                 $event->rules['system/compress/<uid:.+>'] = 'compress/compress/get-link';
             }
         );
+
+
+        Event::on(
+            Utilities::class,
+            Utilities::EVENT_REGISTER_UTILITY_TYPES,
+            function (RegisterComponentTypesEvent $event) {
+                $event->types[] = CompressUtility::class;
+            }
+        );
+
     }
 
     // Protected Methods
