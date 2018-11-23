@@ -4,7 +4,7 @@ Compress exposes a variable within Twig to create zip archives from Asset querie
 
 ## Features
 - Compress asset query into a zip file
-- Define a custom file name for the zip
+- Generate "lazy links": will dispatch a queue job to generate archives, if a user clicks a link before the job is completed or started, the asset will be fetched on-demand, or define your own logic.
 - Compressed archives are stored as Assets themselves, so you may query them just like other assets
 - Retrieve an asset query for the contents of an archive to show what files are contained in it
 - Automatically forces zip files to be regenerated when a dependent asset is deleted in Craft
@@ -39,10 +39,10 @@ To install the plugin, follow these instructions.
     {# Note: I didn't call ".all()" on this, we only want the query #}
     {% set assets = craft.assets.volume('images') %}
     
-    {# Filename is optional, the zip extension will be appended automatically #}
-    {% set archive = craft.compress.zip(assets, "my_file_name") %}
+    {# Second parameter is whether we want the archive generated on page load or lazily #}
+    {% set archive = craft.compress.zip(assets, true) %}
     
-    {# the archive variable is now set to an Archive model #}
+    {# the archive variable is now set to an Archive model, though since we're in lazy mode, the getAsset() response may be null #}
     {% set archiveAsset = archive.getAsset() %}
     <a href="{{ archiveAsset.getUrl() }}">Download All Files</a>
     

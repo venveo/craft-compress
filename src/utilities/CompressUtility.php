@@ -62,11 +62,9 @@ class CompressUtility extends Utility
      */
     public static function contentHtml(): string
     {
-        $someVar = 'Have a nice day!';
         return Craft::$app->getView()->renderTemplate(
             'compress/_components/utilities/CompressUtility_content',
             [
-                'someVar' => $someVar
             ]
         );
     }
