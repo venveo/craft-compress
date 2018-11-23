@@ -1,0 +1,32 @@
+{# @var craft \craft\web\twig\variables\CraftVariable #}
+{#
+/**
+ * Compress plugin for Craft CMS 3.x
+ *
+ * Compress Settings.twig
+ *
+ * @author    Venveo
+ * @copyright Copyright (c) 2018 Venveo
+ * @link      https://venveo.com
+ * @package   Compress
+ * @since     1.0.0
+ */
+#}
+
+{% import "_includes/forms" as forms %}
+
+{#{% do view.registerAssetBundle("venveo\\compress\\assetbundles\\compress\\CompressAsset") %}#}
+{% set volumes = craft.app.volumes.viewableVolumes %}
+{% set options = [] %}
+{% for volume in volumes %}
+    {% set options = options|merge([{label: volume.name, value: volume.handle}]) %}
+{% endfor %}
+
+{{ forms.selectField({
+    label: 'Default Volume'|t('compress'),
+    instructions: 'Select the volume  for archive storage',
+    id: 'defaultVolumeHandle',
+    name: 'defaultVolumeHandle',
+    value: settings['defaultVolumeHandle'],
+    options: options
+}) }}

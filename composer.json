@@ -1,0 +1,44 @@
+{
+    "name": "venveo/compress",
+    "description": "Create files",
+    "type": "craft-plugin",
+    "version": "1.0.0",
+    "keywords": [
+        "craft",
+        "cms",
+        "craftcms",
+        "craft-plugin",
+        "compress"
+    ],
+    "support": {
+        "docs": "https://github.com/venveo/craft-compress/blob/master/README.md",
+        "issues": "https://github.com/venveo/craft-compress/issues"
+    },
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Venveo",
+            "homepage": "https://venveo.com"
+        }
+    ],
+    "require": {
+        "craftcms/cms": "^3.0.0-RC1",
+        "ext-zip": "*"
+    },
+    "autoload": {
+        "psr-4": {
+          "venveo\\compress\\": "src/"
+        }
+    },
+    "extra": {
+        "name": "Compress",
+        "handle": "compress",
+        "hasCpSettings": true,
+        "hasCpSection": false,
+        "changelogUrl": "https://raw.githubusercontent.com/venveo/craft-compress/master/CHANGELOG.md",
+        "components": {
+            "compress": "venveo\\compress\\services\\Compress"
+        },
+        "class": "venveo\\compress\\Compress"
+    }
+}
