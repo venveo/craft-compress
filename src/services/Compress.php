@@ -16,6 +16,7 @@ use craft\base\Volume;
 use craft\elements\Asset;
 use craft\elements\db\AssetQuery;
 use craft\helpers\StringHelper;
+use venveo\compress\Compress as Plugin;
 use venveo\compress\events\CompressEvent;
 use venveo\compress\jobs\Compressor;
 use venveo\compress\models\Archive as ArchiveModel;
@@ -258,18 +259,39 @@ class Compress extends Component
         // the file records will be deleted when its asset is deleted
         $fileRecords = FileRecord::find()->where(['=', 'assetId', $asset->id])->with('archive')->all();
         $archiveAssets = [];
+        $archiveRecords = [];
         foreach ($fileRecords as $fileRecord) {
             $archiveAssets[] = $fileRecord->archive->assetId;
+            $archiveRecords[] = $fileRecords->archive;
         }
         $archiveAssets = array_unique($archiveAssets);
+        $archiveRecords = array_unique($archiveRecords);
         foreach ($archiveAssets as $archiveAsset) {
             try {
                 \Craft::$app->elements->deleteElementById($archiveAsset);
             } catch (\Throwable $e) {
-                Craft::error('Failed to delete an archive asset: '.$e->getMessage(), 'compress');
+                Craft::error('Failed to delete an archive asset after a dependent file was deleted: '.$e->getMessage(), 'compress');
                 Craft::error($e->getTraceAsString(), 'compress');
             }
         }
+
+        if (Plugin::$plugin->getSettings()->autoRegenerate === true) {
+            foreach($archiveRecords as $record) {
+                $cacheKey = 'Compress:InQueue:'.$record->uid;
+                // Make sure we don't run more than one job for the archive
+                if (!\Craft::$app->cache->get($cacheKey)) {
+                    $job = new Compressor([
+                        'cacheKey' => $cacheKey,
+                        'archiveUid' => $record->uid
+                    ]);
+                    $jobId = \Craft::$app->queue->push($job);
+                    \Craft::$app->cache->set($cacheKey, true);
+                    \Craft::$app->cache->set($cacheKey.':'.'jobId', $jobId);
+                    \Craft::info('Regenerating archive after a file was deleted.', 'compress');
+                }
+            }
+        }
+
     }
 
     /**
