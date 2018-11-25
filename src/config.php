@@ -23,6 +23,19 @@
  */
 
 return [
-    'defaultVolumeHandle' => 'resourcesS3',
+    /**
+     * Volume to store generated assets
+     *
+     * Default: null
+     */
+    'defaultVolumeHandle' => null,
 
+    /**
+     * If set to true, queue jobs will be dispatched to regenerate an archive
+     * if you delete one of its dependent files. Otherwise, this will occur
+     * lazily.
+     *
+     * Default: true
+     */
+    'autoRegenerate' => true,
 ];

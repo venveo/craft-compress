@@ -30,8 +30,7 @@ class Settings extends Model
      */
     public $defaultVolumeHandle = '';
 
-    // Public Methods
-    // =========================================================================
+    public $autoRegenerate = true;
 
     /**
      * @inheritdoc
@@ -39,7 +38,8 @@ class Settings extends Model
     public function rules()
     {
         return [
-            ['defaultVolumeHandle', 'string']
+            ['defaultVolumeHandle', 'string'],
+            ['autoRegenerate', 'boolean']
         ];
     }
 }

@@ -16,6 +16,7 @@ use craft\base\Volume;
 use craft\elements\Asset;
 use craft\elements\db\AssetQuery;
 use craft\helpers\StringHelper;
+use venveo\compress\events\CompressEvent;
 use venveo\compress\jobs\Compressor;
 use venveo\compress\models\Archive as ArchiveModel;
 use venveo\compress\records\Archive as ArchiveRecord;
@@ -32,12 +33,22 @@ use ZipArchive;
 class Compress extends Component
 {
     /**
+     * Called right before saving the archive records. You may take this
+     * opportunity to modify the list of files being stored in the archive
+     */
+    public const EVENT_BEFORE_CONFIGURE_ARCHIVE = 'EVENT_BEFORE_CONFIGURE_ARCHIVE';
+
+    /**
+     * Called right after successfully saving the Archive record and its File
+     * records.
+     */
+    public const EVENT_AFTER_CONFIGURE_ARCHIVE = 'EVENT_AFTER_CONFIGURE_ARCHIVE';
+
+    /**
      * @param AssetQuery $query
      * @param bool $lazy
      * @param null $filename
      * @return ArchiveModel|null
-     * @throws \yii\base\Exception
-     * @throws \yii\base\InvalidConfigException
      */
     public function getArchiveModelForQuery(AssetQuery $query, $lazy = false, $filename = null): ?ArchiveModel
     {
@@ -88,7 +99,7 @@ class Compress extends Component
         }
     }
 
-    public function createArchiveRecord($assets, $archiveAsset = null)
+    public function createArchiveRecord($assets, $archiveAsset = null): ArchiveRecord
     {
         $archive = $this->createArchiveRecords($assets, $archiveAsset);
         return $archive;
@@ -179,6 +190,15 @@ class Compress extends Component
             $archiveRecord->save();
         }
 
+        $event = new CompressEvent([
+            'archiveRecord' => $archiveRecord,
+            'assets' => $zippedAssets
+        ]);
+        $this->trigger(self::EVENT_BEFORE_CONFIGURE_ARCHIVE, $event);
+
+        $zippedAssets = $event->assets;
+        $archiveRecord = $event->archiveRecord;
+
         $rows = [];
         /** @var Asset $zippedAsset */
         foreach ($zippedAssets as $zippedAsset) {
@@ -190,6 +210,13 @@ class Compress extends Component
         }
         $cols = ['archiveId', 'assetId', 'siteId'];
         \Craft::$app->db->createCommand()->batchInsert(FileRecord::tableName(), $cols, $rows)->execute();
+
+        $event = new CompressEvent([
+            'archiveRecord' => $archiveRecord,
+            'assets' => $zippedAssets
+        ]);
+        $this->trigger(self::EVENT_AFTER_CONFIGURE_ARCHIVE, $event);
+
         return $archiveRecord;
     }
 
