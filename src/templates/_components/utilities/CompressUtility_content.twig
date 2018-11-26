@@ -1,6 +1,26 @@
 {# @var craft \craft\web\twig\variables\CraftVariable #}
 
 {% set archives = craft.compress.archives() %}
-{% for archive in archives %}
-    {{ archive.id }}
-{% endfor %}
+<div class="readable">
+    <table class="data fullwidth fixed-layout">
+        <thead>
+        <tr>
+            <th>Archive ID</th>
+            <th>Asset</th>
+            <th>Date Created</th>
+            <th>Date Updated</th>
+        </tr>
+        </thead>
+        <tbody>
+
+        {% for item in archives %}
+            <tr>
+                <td>{{ item.id }}</td>
+                <td>{% if item.getAsset() %}{{ item.getAsset().title }}{% else %}Not Ready{% endif %}</td>
+                <td>{{ item.dateCreated|date('d/m/Y H:i:s') }}</td>
+                <td>{{ item.dateUpdated|date('d/m/Y H:i:s') }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
