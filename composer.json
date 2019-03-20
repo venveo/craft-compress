@@ -1,5 +1,5 @@
 {
-    "name": "venveo/compress",
+    "name": "venveo/craft-compress",
     "description": "Create files",
     "type": "craft-plugin",
     "version": "1.0.0",
@@ -32,7 +32,7 @@
     },
     "extra": {
         "name": "Compress",
-        "handle": "compress",
+        "handle": "craft-compress",
         "hasCpSettings": true,
         "hasCpSection": false,
         "changelogUrl": "https://raw.githubusercontent.com/venveo/craft-compress/master/CHANGELOG.md",
