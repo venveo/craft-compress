@@ -282,8 +282,8 @@ class Compress extends Component
             try {
                 \Craft::$app->elements->deleteElementById($archiveAsset);
             } catch (\Throwable $e) {
-                Craft::error('Failed to delete an archive asset after a dependent file was deleted: '.$e->getMessage(), 'compress');
-                Craft::error($e->getTraceAsString(), 'compress');
+                Craft::error('Failed to delete an archive asset after a dependent file was deleted: '.$e->getMessage(), 'craft-compress');
+                Craft::error($e->getTraceAsString(), 'craft-compress');
             }
         }
 
@@ -299,7 +299,7 @@ class Compress extends Component
                     $jobId = \Craft::$app->queue->push($job);
                     \Craft::$app->cache->set($cacheKey, true);
                     \Craft::$app->cache->set($cacheKey.':'.'jobId', $jobId);
-                    \Craft::info('Regenerating archive after a file was deleted.', 'compress');
+                    \Craft::info('Regenerating archive after a file was deleted.', 'craft-compress');
                 }
             }
         }

@@ -53,8 +53,8 @@ class CompressController extends Controller
             return \Craft::$app->response->redirect($asset->getUrl());
         } catch (\Exception $e) {
             \Craft::$app->response->setStatusCode(500);
-            \Craft::error('Archive could not be generated: '.$e->getMessage(), 'compress');
-            \Craft::error($e->getTraceAsString(), 'compress');
+            \Craft::error('Archive could not be generated: '.$e->getMessage(), 'craft-compress');
+            \Craft::error($e->getTraceAsString(), 'craft-compress');
             return 'Archive could not be generated';
         }
     }
