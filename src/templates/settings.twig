@@ -34,19 +34,17 @@
 {{ forms.textField({
     first: true,
     label: "Maximum File Size"|t('app'),
-    id: 'max-filesize',
-    name: 'max-filesize',
-    value: (transform is defined ? transform.name : null),
-    errors: (transform is defined ? transform.getErrors('max-filesize') : null),
+    id: 'maxFilesize',
+    name: 'maxFilesize',
+    value: settings['maxFilesize'],
     required: true,
 }) }}
 
 {{ forms.textField({
     first: true,
     label: "Maximum File Count"|t('app'),
-    id: 'max-filecount',
-    name: 'max-filecount',
-    value: (transform is defined ? transform.name : null),
-    errors: (transform is defined ? transform.getErrors('max-filecount') : null),
+    id: 'maxFileCount',
+    name: 'maxFileCount',
+    value: settings['maxFileCount'],
     required: true,
 }) }}
