@@ -150,7 +150,7 @@ class Compress extends Component
             }
 
             $totalFilesize = 0;
-            $maxFileSize = Plugin::$plugin->getSettings()->maxFilesize
+            $maxFileSize = Plugin::$plugin->getSettings()->maxFilesize;
             foreach ($assets as $asset) {
                 $totalFilesize += $asset->size;
                 if ($maxFileSize > 0 && $totalFilesize > $maxFileSize) {
