@@ -143,7 +143,17 @@ class Compress extends Component
             if ($zip->open($zipPath, ZipArchive::CREATE) !== true) {
                 throw new \Exception('Cannot create zip at '.$zipPath);
             }
+
+            if (count($assets) > Plugin::$plugin->getSettings()->maxFileCount) {
+                throw new \Exception('Cannot create zip; too many files.');
+            }
+
+            $totalFilesize = 0;
             foreach ($assets as $asset) {
+                $totalFilesize += $asset->size;
+                if ($totalFilesize > Plugin::$plugin->getSettings()->maxFilesize) {
+                    throw new \Exception('Cannot create zip; max filesize exceeded.');
+                }
                 $zip->addFile($asset->getCopyOfFile(), $asset->filename);
             }
 

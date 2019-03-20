@@ -32,6 +32,10 @@ class Settings extends Model
 
     public $autoRegenerate = true;
 
+    public $maxFilesize = 0;
+
+    public $maxFileCount = 0;
+
     /**
      * @inheritdoc
      */
@@ -39,7 +43,8 @@ class Settings extends Model
     {
         return [
             ['defaultVolumeHandle', 'string'],
-            ['autoRegenerate', 'boolean']
+            ['autoRegenerate', 'boolean'],
+            [['maxFilesize', 'maxFileCount'], 'integer'],
         ];
     }
 }
