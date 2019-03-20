@@ -60,8 +60,8 @@ class Compress extends Component
         // Make sure we haven't already hashed these assets. If so, return the
         // archive.
         $record = $this->getArchiveRecordByHash($hash);
-        if ($record instanceof ArchiveRecord && $record->assetId) {
-            $asset = \Craft::$app->assets->getAssetById($record->id, $record->siteId);
+        if ($record instanceof ArchiveRecord && isset($record->assetId)) {
+            $asset = \Craft::$app->assets->getAssetById($record->assetId, $record->siteId);
             return ArchiveModel::hydrateFromRecord($record, $asset);
         }
 
