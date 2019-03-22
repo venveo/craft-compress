@@ -26,8 +26,7 @@ class CompressController extends Controller
     {
         $record = ArchiveRecord::find()->where(['=', 'uid', $uid])->one();
         if (!$record instanceof ArchiveRecord) {
-            \Craft::$app->response->setStatusCode(404);
-            return 'Archive could not be found';
+            return \Craft::$app->response->setStatusCode(404, 'Archive could not be found');
         }
 
         // If the asset is ready, redirect to its URL
