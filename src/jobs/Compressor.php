@@ -53,9 +53,9 @@ class Compressor extends BaseJob
         try {
             Compress::$plugin->compress->createArchiveAsset($archiveRecord, $this->filename);
         } catch (\Exception $e) {
-            Craft::error('Failed to create archive', 'Compress');
-            Craft::error($e->getMessage(), 'Compress');
-            Craft::error($e->getTraceAsString(), 'Compress');
+            Craft::error('Failed to create archive', 'craft-compress');
+            Craft::error($e->getMessage(), 'craft-compress');
+            Craft::error($e->getTraceAsString(), 'craft-compress');
 
             \Craft::$app->cache->delete($this->cacheKey);
             \Craft::$app->cache->delete($this->cacheKey.':jobId');
@@ -74,6 +74,6 @@ class Compressor extends BaseJob
      */
     protected function defaultDescription(): string
     {
-        return Craft::t('compress', 'Creating Archive '. $this->filename);
+        return Craft::t('craft-compress', 'Creating Archive '. $this->filename);
     }
 }

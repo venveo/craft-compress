@@ -121,7 +121,7 @@ class Compress extends Plugin
     protected function settingsHtml(): string
     {
         return Craft::$app->view->renderTemplate(
-            'compress/settings',
+            'craft-compress/settings',
             [
                 'settings' => $this->getSettings()
             ]

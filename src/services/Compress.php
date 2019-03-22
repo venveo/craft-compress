@@ -60,8 +60,8 @@ class Compress extends Component
         // Make sure we haven't already hashed these assets. If so, return the
         // archive.
         $record = $this->getArchiveRecordByHash($hash);
-        if ($record instanceof ArchiveRecord && $record->assetId) {
-            $asset = \Craft::$app->assets->getAssetById($record->id, $record->siteId);
+        if ($record instanceof ArchiveRecord && isset($record->assetId)) {
+            $asset = \Craft::$app->assets->getAssetById($record->assetId, $record->siteId);
             return ArchiveModel::hydrateFromRecord($record, $asset);
         }
 
@@ -143,7 +143,19 @@ class Compress extends Component
             if ($zip->open($zipPath, ZipArchive::CREATE) !== true) {
                 throw new \Exception('Cannot create zip at '.$zipPath);
             }
+
+            $maxFileCount = Plugin::$plugin->getSettings()->maxFileCount;
+            if ($maxFileCount > 0 && count($assets) > $maxFileCount) {
+                throw new \Exception('Cannot create zip; too many files.');
+            }
+
+            $totalFilesize = 0;
+            $maxFileSize = Plugin::$plugin->getSettings()->maxFilesize;
             foreach ($assets as $asset) {
+                $totalFilesize += $asset->size;
+                if ($maxFileSize > 0 && $totalFilesize > $maxFileSize) {
+                    throw new \Exception('Cannot create zip; max filesize exceeded.');
+                }
                 $zip->addFile($asset->getCopyOfFile(), $asset->filename);
             }
 
@@ -270,8 +282,8 @@ class Compress extends Component
             try {
                 \Craft::$app->elements->deleteElementById($archiveAsset);
             } catch (\Throwable $e) {
-                Craft::error('Failed to delete an archive asset after a dependent file was deleted: '.$e->getMessage(), 'compress');
-                Craft::error($e->getTraceAsString(), 'compress');
+                Craft::error('Failed to delete an archive asset after a dependent file was deleted: '.$e->getMessage(), 'craft-compress');
+                Craft::error($e->getTraceAsString(), 'craft-compress');
             }
         }
 
@@ -287,7 +299,7 @@ class Compress extends Component
                     $jobId = \Craft::$app->queue->push($job);
                     \Craft::$app->cache->set($cacheKey, true);
                     \Craft::$app->cache->set($cacheKey.':'.'jobId', $jobId);
-                    \Craft::info('Regenerating archive after a file was deleted.', 'compress');
+                    \Craft::info('Regenerating archive after a file was deleted.', 'craft-compress');
                 }
             }
         }

@@ -23,10 +23,28 @@
 {% endfor %}
 
 {{ forms.selectField({
-    label: 'Default Volume'|t('compress'),
+    label: 'Default Volume'|t('craft-compress'),
     instructions: 'Select the volume  for archive storage',
     id: 'defaultVolumeHandle',
     name: 'defaultVolumeHandle',
     value: settings['defaultVolumeHandle'],
     options: options
+}) }}
+
+{{ forms.textField({
+    first: true,
+    label: "Maximum File Size"|t('app'),
+    id: 'maxFilesize',
+    name: 'maxFilesize',
+    value: settings['maxFilesize'],
+    required: true,
+}) }}
+
+{{ forms.textField({
+    first: true,
+    label: "Maximum File Count"|t('app'),
+    id: 'maxFileCount',
+    name: 'maxFileCount',
+    value: settings['maxFileCount'],
+    required: true,
 }) }}
