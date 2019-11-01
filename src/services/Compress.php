@@ -17,11 +17,11 @@ use craft\elements\Asset;
 use craft\elements\db\AssetQuery;
 use craft\helpers\StringHelper;
 use venveo\compress\Compress as Plugin;
+use venveo\compress\errors\CompressException;
 use venveo\compress\events\CompressEvent;
 use venveo\compress\jobs\CreateArchive;
 use venveo\compress\models\Archive as ArchiveModel;
 use venveo\compress\records\Archive as ArchiveRecord;
-use venveo\compress\records\File;
 use venveo\compress\records\File as FileRecord;
 use ZipArchive;
 
@@ -51,10 +51,18 @@ class Compress extends Component
      * @param null $filename
      * @return ArchiveModel|null
      */
-    public function getArchiveModelForQuery(AssetQuery $query, $lazy = false, $filename = null)
+    public function getArchiveModelForQuery($query, $lazy = false, $filename = null)
     {
         // Get the assets and create a unique hash to represent them
-        $assets = $query->all();
+        if ($query instanceof AssetQuery) {
+            $assets = $query->all();
+        } elseif (is_array($query)) {
+            $assets = $query;
+        } else {
+            Craft::error('Unexpected input provided for asset query', __METHOD__);
+            return null;
+        }
+
         $hash = $this->getHashForAssets($assets);
 
         // Make sure we haven't already hashed these assets. If so, return the
@@ -116,7 +124,7 @@ class Compress extends Component
      * @throws \craft\errors\VolumeObjectNotFoundException
      * @throws \Exception
      */
-    public function createArchiveAsset(ArchiveRecord $archiveRecord, $assetName = 'assets')
+    public function createArchiveAsset(ArchiveRecord $archiveRecord)
     {
         $uuid = StringHelper::UUID();
         $fileAssetRecords = $archiveRecord->fileAssets;
@@ -128,53 +136,50 @@ class Compress extends Component
         $assetQuery = new AssetQuery(Asset::class);
         $assetQuery->id($assetIds);
         $assets = $assetQuery->all();
-        if (!$assetName) {
-            $assetName = $uuid . '.zip';
-        } else {
-            $assetName .= '.zip';
-        }
+        $assetName = $uuid . '.zip';
         $filename = $uuid . '.zip';
         // Create the SupportAttachment zip
-        $zipPath = Craft::$app->getPath()->getTempPath() . '/' . $filename;
+        $zipPath = Craft::$app->getPath()->getTempPath() . DIRECTORY_SEPARATOR . $filename;
+
         try {
             // Create the zip
             $zip = new ZipArchive();
 
             if ($zip->open($zipPath, ZipArchive::CREATE) !== true) {
-                throw new \Exception('Cannot create zip at ' . $zipPath);
+                throw new CompressException('Cannot create zip file at: ' . $zipPath);
             }
 
             $maxFileCount = Plugin::$plugin->getSettings()->maxFileCount;
             if ($maxFileCount > 0 && count($assets) > $maxFileCount) {
-                throw new \Exception('Cannot create zip; too many files.');
+                throw new CompressException('Cannot create zip; maxFileCount exceeded.');
             }
 
-            $totalFilesize = 0;
-            $maxFileSize = Plugin::$plugin->getSettings()->maxFilesize;
+            $totalFileSize = 0;
+            $maxFileSize = Plugin::$plugin->getSettings()->maxFileSize;
             foreach ($assets as $asset) {
-                $totalFilesize += $asset->size;
-                if ($maxFileSize > 0 && $totalFilesize > $maxFileSize) {
-                    throw new \Exception('Cannot create zip; max filesize exceeded.');
+                $totalFileSize += $asset->size;
+                if ($maxFileSize > 0 && $totalFileSize > $maxFileSize) {
+                    throw new CompressException('Cannot create zip; maxFileSize exceeded.');
                 }
                 $zip->addFile($asset->getCopyOfFile(), $asset->filename);
             }
 
             $zip->close();
         } catch (\Exception $e) {
-            Craft::error('Failed to create zip file');
-            Craft::error($e->getMessage());
-            Craft::error($e->getTraceAsString());
-            throw $e;
+            Craft::error('Failed to create zip file', __METHOD__);
+            Craft::error($e->getMessage(), __METHOD__);
+            Craft::error($e->getTraceAsString(), __METHOD__);
+            return null;
         }
         $stream = fopen($zipPath, 'rb');
 
-        $volumeHandle = \venveo\compress\Compress::$plugin->getSettings()->defaultVolumeHandle;
+        $volumeHandle = Plugin::$plugin->getSettings()->defaultVolumeHandle;
         /** @var Volume $volume */
         $volume = Craft::$app->volumes->getVolumeByHandle($volumeHandle);
         if (!$volume instanceof Volume) {
-            throw new \Exception('Default volume not set.');
+            throw new CompressException('Default volume not set.');
         }
-        $finalFilePath = $uuid . '/' . $assetName;
+        $finalFilePath = $assetName;
         $volume->createFileByStream($finalFilePath, $stream, []);
         unlink($zipPath);
         $asset = Craft::$app->getAssetIndexer()->indexFile($volume, $finalFilePath);
@@ -243,7 +248,7 @@ class Compress extends Component
         foreach ($assets as $asset) {
             $ids[] = [$asset->id];
         }
-        return md5(serialize($ids));
+        return md5(\GuzzleHttp\json_encode($ids));
     }
 
     /**
@@ -268,11 +273,13 @@ class Compress extends Component
         // delete the asset for the archive to prompt it to regenerate.
         // the file records will be deleted when its asset is deleted
         $fileRecords = FileRecord::find()->where(['=', 'assetId', $asset->id])->with('archive')->all();
+
         $archiveAssets = [];
         $archiveRecords = [];
+        /** @var FileRecord $fileRecord */
         foreach ($fileRecords as $fileRecord) {
             $archiveAssets[] = $fileRecord->archive->assetId;
-            $archiveRecords[] = $fileRecords->archive;
+            $archiveRecords[] = $fileRecord->archive;
         }
         $archiveAssets = array_unique($archiveAssets);
         $archiveRecords = array_unique($archiveRecords);
@@ -280,8 +287,8 @@ class Compress extends Component
             try {
                 \Craft::$app->elements->deleteElementById($archiveAsset);
             } catch (\Throwable $e) {
-                Craft::error('Failed to delete an archive asset after a dependent file was deleted: ' . $e->getMessage(), 'craft-compress');
-                Craft::error($e->getTraceAsString(), 'craft-compress');
+                Craft::error('Failed to delete an archive asset after a dependent file was deleted: ' . $e->getMessage(), __METHOD__);
+                Craft::error($e->getTraceAsString(), __METHOD__);
             }
         }
 
@@ -297,7 +304,7 @@ class Compress extends Component
                     $jobId = \Craft::$app->queue->push($job);
                     \Craft::$app->cache->set($cacheKey, true);
                     \Craft::$app->cache->set($cacheKey . ':' . 'jobId', $jobId);
-                    \Craft::info('Regenerating archive after a file was deleted.', 'craft-compress');
+                    \Craft::info('Regenerating archive after a file was deleted.', __METHOD__);
                 }
             }
         }

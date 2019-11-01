@@ -22,12 +22,12 @@ use venveo\compress\models\Archive as ArchiveModel;
 class CompressVariable
 {
     /**
-     * @param AssetQuery $query
+     * @param AssetQuery|array $query
      * @param $filename
      * @param bool $lazy
-     * @return ArchiveModel
+     * @return ArchiveModel|null
      */
-    public function zip(AssetQuery $query, $lazy = false, $filename = null): ?ArchiveModel
+    public function zip($query, $lazy = false, $filename = null)
     {
         return Compress::$plugin->compress->getArchiveModelForQuery($query, $lazy, $filename);
     }

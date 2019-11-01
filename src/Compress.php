@@ -15,10 +15,8 @@ use craft\base\Plugin;
 use craft\elements\Asset;
 use craft\events\ModelEvent;
 use craft\events\RegisterComponentTypesEvent;
-use craft\events\RegisterUrlRulesEvent;
 use craft\services\Utilities;
 use craft\web\twig\variables\CraftVariable;
-use craft\web\UrlManager;
 use venveo\compress\models\Settings;
 use venveo\compress\services\Compress as CompressService;
 use venveo\compress\utilities\CompressUtility;
@@ -65,10 +63,14 @@ class Compress extends Plugin
         parent::init();
         self::$plugin = $this;
 
+        $this->setComponents([
+            'compress' => CompressService::class
+        ]);
+
         Event::on(
             CraftVariable::class,
             CraftVariable::EVENT_INIT,
-            function(Event $event) {
+            function (Event $event) {
                 /** @var CraftVariable $variable */
                 $variable = $event->sender;
                 $variable->set('compress', CompressVariable::class);
@@ -78,22 +80,27 @@ class Compress extends Plugin
         Event::on(
             Asset::class,
             Asset::EVENT_BEFORE_DELETE,
-            function(ModelEvent $event) {
+            function (ModelEvent $event) {
                 /** @var Asset $asset */
                 $asset = $event->sender;
                 $this->compress->handleAssetDeleted($asset);
             }
         );
 
+        Event::on(
+            Asset::class,
+            Asset::EVENT_AFTER_SAVE,
+            function (ModelEvent $event) {
+                /** @var Asset $asset */
+                $asset = $event->sender;
+                if ($asset->scenario === Asset::SCENARIO_REPLACE) {
+                    // TODO:
+                    die('Need to handle replacement');
+                    $this->compress->handleAssetReplaced($asset);
+                }
+            }
+        );
 
-        // Register site routes
-//        Event::on(
-//            UrlManager::class,
-//            UrlManager::EVENT_REGISTER_SITE_URL_RULES,
-//            function (RegisterUrlRulesEvent $event) {
-//                $event->rules['system/compress/<uid:.+>'] = 'compress/compress/get-link';
-//            }
-//        );
 
         // Register our utility
         Event::on(

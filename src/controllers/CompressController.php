@@ -12,6 +12,7 @@ namespace venveo\compress\controllers;
 
 use craft\web\Controller;
 use venveo\compress\Compress as Plugin;
+use venveo\compress\errors\CompressException;
 use venveo\compress\models\Archive as ArchiveModel;
 use venveo\compress\records\Archive as ArchiveRecord;
 
@@ -21,6 +22,9 @@ class CompressController extends Controller
 
     /**
      * Gets a direct link to the asset
+     * @param $uid
+     * @return \craft\web\Response|string|\yii\console\Response
+     * @throws CompressException
      */
     public function actionGetLink($uid)
     {
@@ -32,7 +36,10 @@ class CompressController extends Controller
         // If the asset is ready, redirect to its URL
         if ($record->assetId) {
             $archiveModel = ArchiveModel::hydrateFromRecord($record);
-            return \Craft::$app->response->redirect($archiveModel->getAsset()->getUrl());
+            // It's possible for an asset ID to exist, but getAsset to return false on soft-deleted assets
+            if ($archiveModel->getAsset()) {
+                return \Craft::$app->response->redirect($archiveModel->getAsset()->getUrl());
+            }
         }
 
         // We need to generate the asset NOW!
@@ -49,12 +56,12 @@ class CompressController extends Controller
                     \Craft::$app->cache->delete($cacheKey . ':jobId');
                 }
             }
-            return \Craft::$app->response->redirect($asset->getUrl());
+            return \Craft::$app->response->redirect($asset->asset->getUrl());
         } catch (\Exception $e) {
             \Craft::$app->response->setStatusCode(500);
-            \Craft::error('Archive could not be generated: ' . $e->getMessage(), 'craft-compress');
-            \Craft::error($e->getTraceAsString(), 'craft-compress');
-            return 'Archive could not be generated';
+            \Craft::error('Archive could not be generated: ' . $e->getMessage(), __METHOD__);
+            \Craft::error($e->getTraceAsString(), __METHOD__);
+            throw new CompressException('Archive could not be generated');
         }
     }
 }

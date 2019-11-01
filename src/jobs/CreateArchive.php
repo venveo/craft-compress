@@ -10,10 +10,9 @@
 
 namespace venveo\compress\jobs;
 
-use venveo\compress\Compress;
-
 use Craft;
 use craft\queue\BaseJob;
+use venveo\compress\Compress;
 use venveo\compress\records\Archive as ArchiveRecord;
 
 /**
@@ -53,17 +52,17 @@ class CreateArchive extends BaseJob
         try {
             Compress::$plugin->compress->createArchiveAsset($archiveRecord, $this->filename);
         } catch (\Exception $e) {
-            Craft::error('Failed to create archive', 'craft-compress');
-            Craft::error($e->getMessage(), 'craft-compress');
-            Craft::error($e->getTraceAsString(), 'craft-compress');
+            Craft::error('Failed to create archive', __METHOD__);
+            Craft::error($e->getMessage(), __METHOD__);
+            Craft::error($e->getTraceAsString(), __METHOD__);
 
             \Craft::$app->cache->delete($this->cacheKey);
-            \Craft::$app->cache->delete($this->cacheKey.':jobId');
+            \Craft::$app->cache->delete($this->cacheKey . ':jobId');
             // Go ahead and blow up
             return false;
         }
         \Craft::$app->cache->delete($this->cacheKey);
-        \Craft::$app->cache->delete($this->cacheKey.':jobId');
+        \Craft::$app->cache->delete($this->cacheKey . ':jobId');
     }
 
     // Protected Methods
@@ -74,6 +73,6 @@ class CreateArchive extends BaseJob
      */
     protected function defaultDescription(): string
     {
-        return Craft::t('craft-compress', 'Creating Archive '. $this->filename);
+        return Craft::t('compress', 'Creating Archive');
     }
 }

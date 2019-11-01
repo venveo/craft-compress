@@ -4,10 +4,15 @@ Compress exposes a variable within Twig to create zip archives from Asset querie
 
 ## Features
 - Compress asset query into a zip file
-- Generate "lazy links": will dispatch a queue job to generate archives, if a user clicks a link before the job is completed or started, the asset will be fetched on-demand, or define your own logic.
-- Compressed archives are stored as Assets themselves, so you may query them just like other assets
-- Retrieve an asset query for the contents of an archive to show what files are contained in it
-- Automatically forces zip files to be regenerated when a dependent asset is deleted in Craft
+- Generate "lazy links": will dispatch a queue job to generate archives,
+if a user clicks a link before the job is completed or started, the 
+asset will be fetched on-demand and the queue job cancelled.
+- Compressed archives are stored as Assets themselves, so you may query 
+them just like other assets.
+- Retrieve an asset query for the contents of an archive to show what 
+files are contained in it.
+- Automatically forces zip files to be regenerated when a dependent 
+asset is deleted or updated in Craft.
 
 ## Requirements
 
@@ -37,19 +42,31 @@ storage volume for archives. It's not recommended to use an existing
 volume.
 
 ## Using Compress
-### Example Usage
+
+### Basic Example
 ```twig
-    {# Note: I didn't call ".all()" on this, we only want the query #}
+    {# Feel free to provide an array of assets if you prefer! #}
     {% set assets = craft.assets.volume('images') %}
     
-    {# Second parameter is whether we want the archive generated on page load or lazily #}
+    {# 
+    Second parameter is whether we want the archive generated on page 
+    load or lazily.
+    #}
     {% set archive = craft.compress.zip(assets, true) %}
     
-    {# the archive variable is now set to an Archive model, though since we're in lazy mode, the getAsset() response may be null #}
-    {% set archiveAsset = archive.getAsset() %}
-    <a href="{{ archiveAsset.getUrl() }}">Download All Files</a>
+    {# 
+    the archive variable is now set to an Archive model, but since 
+    we're in lazy mode, the getAsset() response may be null. We can
+    either check the .isReady method or we can just get the lazyLink
+    #}
+    {% if archive.isReady %}
+        {% set archiveAsset = archive.getAsset() %}
+        <a href="{{ archiveAsset.getUrl() }}">Download All Files</a>
+        {% else %}
+        <a href="{{ archive.lazyLink}}">Download All Files</a>
+    {% endif %}
     
-    {# We can get a new AssetQuery with the contents of the archive #}
+    {# We can get a new AssetQuery with the contents of the archive! #}
     {% set contents = archiveAsset.getContents().all() %}
     <ul>
     {% for file in contents %}
@@ -58,5 +75,22 @@ volume.
     </ul>
 ```
 
+### Advanced Example
+This example gets all assets, groups them by the file type, and then
+generates a lazy link to download all assets of a particular kind.
+
+```twig
+{% set assets = craft.assets({
+    volume: 'local'
+}).all() %}
+
+{% for kind, assetGroup in assets|group(a => a.kind) %}
+    {% set archive = craft.compress.zip(assetGroup, true) %}
+    <strong>{{ kind }} - <a href="{{ archive.lazyLink }}">Download All ({{ archive.isReady ? 'Ready' : 'Not ready' }})</a></strong>
+    {% for asset in assetGroup %}
+        <li>{{ asset.filename }}</li>
+    {% endfor %}
+{% endfor %}
+```
 
 Brought to you by [Venveo](https://venveo.com)

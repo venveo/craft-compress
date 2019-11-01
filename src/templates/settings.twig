@@ -33,13 +33,13 @@
 
 {{ forms.textField({
     label: "Maximum File Size (kilobytes)"|t('compress'),
-    instructions: "Compress won't try to add files larger than this to an archive. Leave at zero for no limit."|t('compress'),
-    id: 'maxFilesize',
-    name: 'maxFilesize',
-    value: settings['maxFilesize'],
+    instructions: "Compress won't create an archive with a combined (pre-compressed) file size greater than this. Leave at zero for no limit."|t('compress'),
+    id: 'maxFileSize',
+    name: 'maxFileSize',
+    value: settings['maxFileSize'],
     required: true,
     size: 3,
-    errors: settings.getErrors('maxFilesize')
+    errors: settings.getErrors('maxFileSize')
 }) }}
 
 {{ forms.textField({

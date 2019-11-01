@@ -72,7 +72,7 @@ class Archive extends Model
         if ($this->asset instanceof Asset) {
             return $this->asset->getUrl();
         }
-        return UrlHelper::url('system/compress/' . $this->uid);
+        return UrlHelper::actionUrl('compress/compress/get-link', ['uid' => $this->uid]);
     }
 
     public function getContents()

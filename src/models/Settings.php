@@ -32,7 +32,7 @@ class Settings extends Model
 
     public $autoRegenerate = true;
 
-    public $maxFilesize = 0;
+    public $maxFileSize = 0;
 
     public $maxFileCount = 0;
 
@@ -44,7 +44,7 @@ class Settings extends Model
         return [
             ['defaultVolumeHandle', 'string'],
             ['autoRegenerate', 'boolean'],
-            [['maxFilesize', 'maxFileCount'], 'integer'],
+            [['maxFileSize', 'maxFileCount'], 'integer'],
         ];
     }
 }
