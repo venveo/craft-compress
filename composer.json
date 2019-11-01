@@ -1,6 +1,6 @@
 {
     "name": "venveo/craft-compress",
-    "description": "Create zip files from Craft assets on the fly",
+    "description": "Create smart zip files from Craft assets on the fly",
     "type": "craft-plugin",
     "version": "1.0.0",
     "keywords": [
@@ -32,7 +32,7 @@
     },
     "extra": {
         "name": "Compress",
-        "handle": "craft-compress",
+        "handle": "compress",
         "changelogUrl": "https://raw.githubusercontent.com/venveo/craft-compress/master/CHANGELOG.md",
         "class": "venveo\\compress\\Compress"
     }

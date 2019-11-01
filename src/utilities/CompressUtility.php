@@ -30,7 +30,7 @@ class CompressUtility extends Utility
      */
     public static function displayName(): string
     {
-        return Craft::t('craft-compress', 'Compress Cache');
+        return Craft::t('compress', 'Compress Cache');
     }
 
     /**

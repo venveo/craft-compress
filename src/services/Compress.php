@@ -18,7 +18,7 @@ use craft\elements\db\AssetQuery;
 use craft\helpers\StringHelper;
 use venveo\compress\Compress as Plugin;
 use venveo\compress\events\CompressEvent;
-use venveo\compress\jobs\Compressor;
+use venveo\compress\jobs\CreateArchive;
 use venveo\compress\models\Archive as ArchiveModel;
 use venveo\compress\records\Archive as ArchiveRecord;
 use venveo\compress\records\File;
@@ -51,7 +51,7 @@ class Compress extends Component
      * @param null $filename
      * @return ArchiveModel|null
      */
-    public function getArchiveModelForQuery(AssetQuery $query, $lazy = false, $filename = null): ?ArchiveModel
+    public function getArchiveModelForQuery(AssetQuery $query, $lazy = false, $filename = null)
     {
         // Get the assets and create a unique hash to represent them
         $assets = $query->all();
@@ -61,7 +61,7 @@ class Compress extends Component
         // archive.
         $record = $this->getArchiveRecordByHash($hash);
         if ($record instanceof ArchiveRecord && isset($record->assetId)) {
-            $asset = \Craft::$app->assets->getAssetById($record->assetId, $record->siteId);
+            $asset = \Craft::$app->assets->getAssetById($record->assetId);
             return ArchiveModel::hydrateFromRecord($record, $asset);
         }
 
@@ -72,21 +72,21 @@ class Compress extends Component
 
         // We'll use the cache to keep track of the status of the archive to
         // avoid a race condition between the queue and the web server
-        $cacheKey = 'Compress:InQueue:'.$record->uid;
+        $cacheKey = 'Compress:InQueue:' . $record->uid;
 
         // If we're lazy, we'll just check to make sure it's not in the queue
         // already and then add it to the queue and set a cache key for the job
         if ($lazy === true) {
             // Make sure we don't run more than one job for the archive
             if (!\Craft::$app->cache->get($cacheKey)) {
-                $job = new Compressor([
+                $job = new CreateArchive([
                     'cacheKey' => $cacheKey,
                     'archiveUid' => $record->uid,
                     'filename' => $filename
                 ]);
                 $jobId = \Craft::$app->queue->push($job);
                 \Craft::$app->cache->set($cacheKey, true);
-                \Craft::$app->cache->set($cacheKey.':'.'jobId', $jobId);
+                \Craft::$app->cache->set($cacheKey . ':' . 'jobId', $jobId);
             }
             return ArchiveModel::hydrateFromRecord($record, null);
         }
@@ -116,7 +116,7 @@ class Compress extends Component
      * @throws \craft\errors\VolumeObjectNotFoundException
      * @throws \Exception
      */
-    public function createArchiveAsset(ArchiveRecord $archiveRecord, $assetName = 'assets'): ?ArchiveModel
+    public function createArchiveAsset(ArchiveRecord $archiveRecord, $assetName = 'assets')
     {
         $uuid = StringHelper::UUID();
         $fileAssetRecords = $archiveRecord->fileAssets;
@@ -129,19 +129,19 @@ class Compress extends Component
         $assetQuery->id($assetIds);
         $assets = $assetQuery->all();
         if (!$assetName) {
-            $assetName = $uuid.'.zip';
+            $assetName = $uuid . '.zip';
         } else {
             $assetName .= '.zip';
         }
-        $filename = $uuid.'.zip';
+        $filename = $uuid . '.zip';
         // Create the SupportAttachment zip
-        $zipPath = Craft::$app->getPath()->getTempPath().'/'.$filename;
+        $zipPath = Craft::$app->getPath()->getTempPath() . '/' . $filename;
         try {
             // Create the zip
             $zip = new ZipArchive();
 
             if ($zip->open($zipPath, ZipArchive::CREATE) !== true) {
-                throw new \Exception('Cannot create zip at '.$zipPath);
+                throw new \Exception('Cannot create zip at ' . $zipPath);
             }
 
             $maxFileCount = Plugin::$plugin->getSettings()->maxFileCount;
@@ -174,7 +174,7 @@ class Compress extends Component
         if (!$volume instanceof Volume) {
             throw new \Exception('Default volume not set.');
         }
-        $finalFilePath = $uuid.'/'.$assetName;
+        $finalFilePath = $uuid . '/' . $assetName;
         $volume->createFileByStream($finalFilePath, $stream, []);
         unlink($zipPath);
         $asset = Craft::$app->getAssetIndexer()->indexFile($volume, $finalFilePath);
@@ -198,7 +198,6 @@ class Compress extends Component
         if (!$archiveRecord instanceof ArchiveRecord) {
             $archiveRecord = new ArchiveRecord();
             $archiveRecord->assetId = $asset->id ?? null;
-            $archiveRecord->siteId = \Craft::$app->sites->getCurrentSite()->id;
             $archiveRecord->hash = $this->getHashForAssets($zippedAssets);
             $archiveRecord->save();
         }
@@ -217,11 +216,10 @@ class Compress extends Component
         foreach ($zippedAssets as $zippedAsset) {
             $rows[] = [
                 $archiveRecord->id,
-                $zippedAsset->id,
-                $archiveRecord->siteId
+                $zippedAsset->id
             ];
         }
-        $cols = ['archiveId', 'assetId', 'siteId'];
+        $cols = ['archiveId', 'assetId'];
         \Craft::$app->db->createCommand()->batchInsert(FileRecord::tableName(), $cols, $rows)->execute();
 
         $event = new CompressEvent([
@@ -243,7 +241,7 @@ class Compress extends Component
     {
         $ids = [];
         foreach ($assets as $asset) {
-            $ids[] = [$asset->siteId, $asset->id];
+            $ids[] = [$asset->id];
         }
         return md5(serialize($ids));
     }
@@ -282,23 +280,23 @@ class Compress extends Component
             try {
                 \Craft::$app->elements->deleteElementById($archiveAsset);
             } catch (\Throwable $e) {
-                Craft::error('Failed to delete an archive asset after a dependent file was deleted: '.$e->getMessage(), 'craft-compress');
+                Craft::error('Failed to delete an archive asset after a dependent file was deleted: ' . $e->getMessage(), 'craft-compress');
                 Craft::error($e->getTraceAsString(), 'craft-compress');
             }
         }
 
         if (Plugin::$plugin->getSettings()->autoRegenerate === true) {
-            foreach($archiveRecords as $record) {
-                $cacheKey = 'Compress:InQueue:'.$record->uid;
+            foreach ($archiveRecords as $record) {
+                $cacheKey = 'Compress:InQueue:' . $record->uid;
                 // Make sure we don't run more than one job for the archive
                 if (!\Craft::$app->cache->get($cacheKey)) {
-                    $job = new Compressor([
+                    $job = new CreateArchive([
                         'cacheKey' => $cacheKey,
                         'archiveUid' => $record->uid
                     ]);
                     $jobId = \Craft::$app->queue->push($job);
                     \Craft::$app->cache->set($cacheKey, true);
-                    \Craft::$app->cache->set($cacheKey.':'.'jobId', $jobId);
+                    \Craft::$app->cache->set($cacheKey . ':' . 'jobId', $jobId);
                     \Craft::info('Regenerating archive after a file was deleted.', 'craft-compress');
                 }
             }
@@ -350,7 +348,7 @@ class Compress extends Component
      * @param $uid
      * @return ArchiveModel|null
      */
-    public function getArchiveModelByUID($uid): ?ArchiveModel
+    public function getArchiveModelByUID($uid)
     {
         $record = ArchiveRecord::find()->where(['=', 'uid', $uid])->one();
         if (!$record instanceof ArchiveRecord) {

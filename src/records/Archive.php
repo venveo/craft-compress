@@ -11,7 +11,6 @@ use yii\db\ActiveQueryInterface;
 
 /**
  * @property int|null ownerId
- * @property integer siteId
  * @property \yii\db\ActiveQueryInterface $site
  * @property \yii\db\ActiveQueryInterface $asset
  * @property mixed $fileAssets
@@ -28,14 +27,6 @@ class Archive extends ActiveRecord
     public static function tableName()
     {
         return '{{%compress_archives}}';
-    }
-
-    /**
-     * @return ActiveQueryInterface The relational query object.
-     */
-    public function getSite(): ActiveQueryInterface
-    {
-        return $this->hasOne(Site::class, ['id' => 'siteId']);
     }
 
     /**

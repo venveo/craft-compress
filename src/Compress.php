@@ -52,6 +52,8 @@ class Compress extends Plugin
      */
     public $schemaVersion = '1.0.0';
 
+    public $hasCpSettings = true;
+
     // Public Methods
     // =========================================================================
 
@@ -85,15 +87,15 @@ class Compress extends Plugin
 
 
         // Register site routes
-        Event::on(
-            UrlManager::class,
-            UrlManager::EVENT_REGISTER_SITE_URL_RULES,
-            function (RegisterUrlRulesEvent $event) {
-                $event->rules['system/compress/<uid:.+>'] = 'compress/compress/get-link';
-            }
-        );
+//        Event::on(
+//            UrlManager::class,
+//            UrlManager::EVENT_REGISTER_SITE_URL_RULES,
+//            function (RegisterUrlRulesEvent $event) {
+//                $event->rules['system/compress/<uid:.+>'] = 'compress/compress/get-link';
+//            }
+//        );
 
-
+        // Register our utility
         Event::on(
             Utilities::class,
             Utilities::EVENT_REGISTER_UTILITY_TYPES,
@@ -121,7 +123,7 @@ class Compress extends Plugin
     protected function settingsHtml(): string
     {
         return Craft::$app->view->renderTemplate(
-            'craft-compress/settings',
+            'compress/settings',
             [
                 'settings' => $this->getSettings()
             ]

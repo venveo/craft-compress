@@ -13,7 +13,6 @@ namespace venveo\compress\models;
 use craft\base\Model;
 use craft\db\ActiveRecord;
 use craft\elements\Asset;
-use craft\elements\db\AssetQuery;
 use craft\helpers\UrlHelper;
 use venveo\compress\Compress as Plugin;
 
@@ -26,7 +25,6 @@ class Archive extends Model
 {
     public $id;
     public $uid;
-    public $siteId;
     public $assetId;
     public $hash;
 
@@ -69,14 +67,16 @@ class Archive extends Model
     /**
      * @return string|null
      */
-    public function getLazyLink() {
+    public function getLazyLink()
+    {
         if ($this->asset instanceof Asset) {
             return $this->asset->getUrl();
         }
         return UrlHelper::url('system/compress/' . $this->uid);
     }
 
-    public function getContents() {
+    public function getContents()
+    {
         return Plugin::$plugin->compress->getArchiveContents($this);
     }
 
@@ -89,7 +89,7 @@ class Archive extends Model
         if (!$this->assetId) {
             return false;
         }
-        if($this->getAsset() instanceof Asset) {
+        if ($this->getAsset() instanceof Asset) {
             return true;
         }
 

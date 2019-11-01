@@ -15,7 +15,6 @@
 
 {% import "_includes/forms" as forms %}
 
-{#{% do view.registerAssetBundle("venveo\\compress\\assetbundles\\compress\\CompressAsset") %}#}
 {% set volumes = craft.app.volumes.viewableVolumes %}
 {% set options = [] %}
 {% for volume in volumes %}
@@ -23,8 +22,9 @@
 {% endfor %}
 
 {{ forms.selectField({
-    label: 'Default Volume'|t('craft-compress'),
-    instructions: 'Select the volume  for archive storage',
+    first: true,
+    label: 'Default Volume'|t('compress'),
+    instructions: 'Select the volume  for archive storage'|t('compress'),
     id: 'defaultVolumeHandle',
     name: 'defaultVolumeHandle',
     value: settings['defaultVolumeHandle'],
@@ -32,19 +32,30 @@
 }) }}
 
 {{ forms.textField({
-    first: true,
-    label: "Maximum File Size"|t('app'),
+    label: "Maximum File Size (kilobytes)"|t('compress'),
+    instructions: "Compress won't try to add files larger than this to an archive. Leave at zero for no limit."|t('compress'),
     id: 'maxFilesize',
     name: 'maxFilesize',
     value: settings['maxFilesize'],
     required: true,
+    size: 3,
+    errors: settings.getErrors('maxFilesize')
 }) }}
 
 {{ forms.textField({
-    first: true,
-    label: "Maximum File Count"|t('app'),
+    label: "Maximum File Count"|t('compress'),
+    instructions: "Compress will abort if more than this number of files is requested to be archived. Leave at zero for no limit."|t('compress'),
     id: 'maxFileCount',
     name: 'maxFileCount',
     value: settings['maxFileCount'],
     required: true,
+    size: 3,
+    errors: settings.getErrors('maxFileCount')
 }) }}
+
+ {{ forms.lightswitchField({
+     name: 'autoRegenerate',
+     label: 'Auto-Regenerate'|t('compress'),
+     instructions: 'When enabled, Compress will automatically regenerate archives when one of its dependent files is changed or removed.'|t('compress'),
+     on: settings['autoRegenerate'],
+ }) }}

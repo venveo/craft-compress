@@ -21,7 +21,7 @@ use venveo\compress\records\Archive as ArchiveRecord;
  * @package   Compress
  * @since     1.0.0
  */
-class Compressor extends BaseJob
+class CreateArchive extends BaseJob
 {
     // Public Properties
     // =========================================================================

@@ -11,8 +11,8 @@ Compress exposes a variable within Twig to create zip archives from Asset querie
 
 ## Requirements
 
-- Craft CMS 3.0.0-beta.23 or later.
-- ext-zip PHP extension for creating zip files
+- Craft CMS 3.2.0 or later.
+- ext-zip PHP extension for creating zip files (also conveniently a Craft requirement)
 
 ## Installation
 
@@ -30,8 +30,11 @@ To install the plugin, follow these instructions.
 
 ## Configuring Compress
 
-1. Create a new volume in Craft to store your archives
-2. Click "Settings" next to the plugin in the plugin list and select a storage volume for archives.
+1. Compress creates its archives as assets in Craft, so you'll need a 
+place to put them. Create a new volume.
+2. Click "Settings" next to the plugin in the plugin list and select a 
+storage volume for archives. It's not recommended to use an existing
+volume.
 
 ## Using Compress
 ### Example Usage

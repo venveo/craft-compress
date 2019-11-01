@@ -40,8 +40,8 @@ class CompressController extends Controller
             $asset = Plugin::$plugin->compress->createArchiveAsset($record);
 
             // Now that we have the asset, let's make sure the queue doesn't run
-            $cacheKey = 'Compress:InQueue:'.$record->uid;
-            if (\Craft::$app->cache->get('Compress:InQueue:'.$record->uid)) {
+            $cacheKey = 'Compress:InQueue:' . $record->uid;
+            if (\Craft::$app->cache->get('Compress:InQueue:' . $record->uid)) {
                 $jobId = \Craft::$app->cache->get($cacheKey . ':jobId');
                 if ($jobId) {
                     \Craft::$app->queue->release($jobId);
@@ -52,7 +52,7 @@ class CompressController extends Controller
             return \Craft::$app->response->redirect($asset->getUrl());
         } catch (\Exception $e) {
             \Craft::$app->response->setStatusCode(500);
-            \Craft::error('Archive could not be generated: '.$e->getMessage(), 'craft-compress');
+            \Craft::error('Archive could not be generated: ' . $e->getMessage(), 'craft-compress');
             \Craft::error($e->getTraceAsString(), 'craft-compress');
             return 'Archive could not be generated';
         }
