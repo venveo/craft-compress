@@ -38,4 +38,18 @@ return [
      * Default: true
      */
     'autoRegenerate' => true,
+
+    /**
+     * The maximum pre-compressed file size of all files Compress will attempt to handle. Use zero for no limit.
+     *
+     * Default: 0
+     */
+    'maxFileSize' => 0,
+
+    /**
+     * The maximum number of files Compress will attempt to put in one archive. Use zero for no limit.
+     *
+     * Default: 0
+     */
+    'maxFileCount' => 0
 ];
