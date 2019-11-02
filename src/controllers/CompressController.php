@@ -10,6 +10,8 @@
 
 namespace venveo\compress\controllers;
 
+use Craft;
+use craft\elements\Asset;
 use craft\helpers\DateTimeHelper;
 use craft\web\Controller;
 use venveo\compress\Compress as Plugin;
@@ -51,7 +53,7 @@ class CompressController extends Controller
 
         // We need to generate the asset NOW!
         try {
-            $asset = Plugin::$plugin->compress->createArchiveAsset($record);
+            $archiveModel = Plugin::$plugin->compress->createArchiveAsset($record);
 
             // Now that we have the asset, let's make sure the queue doesn't run
             $cacheKey = 'Compress:InQueue:' . $record->uid;
@@ -63,7 +65,7 @@ class CompressController extends Controller
                     \Craft::$app->cache->delete($cacheKey . ':jobId');
                 }
             }
-            return \Craft::$app->response->redirect($asset->asset->getUrl());
+            return \Craft::$app->response->redirect($archiveModel->asset->getUrl());
         } catch (\Exception $e) {
             \Craft::error('Archive could not be generated: ' . $e->getMessage(), __METHOD__);
             \Craft::error($e->getTraceAsString(), __METHOD__);

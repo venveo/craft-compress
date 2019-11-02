@@ -39,7 +39,9 @@ To install the plugin, follow these instructions.
 place to put them. Create a new volume.
 2. Click "Settings" next to the plugin in the plugin list and select a 
 storage volume for archives. It's not recommended to use an existing
-volume.
+volume. The volume must have URLs in order for the Twig helper to return
+download links; however, it will function without it and respect your
+settings and life choices.
 
 ## Using Compress
 
