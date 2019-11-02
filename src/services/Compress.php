@@ -267,7 +267,7 @@ class Compress extends Component
      *
      * @param Asset $asset
      */
-    public function handleAssetDeleted(Asset $asset): void
+    public function handleAssetUpdated(Asset $asset): void
     {
         // Get the files this affects and the archives. We're just going to
         // delete the asset for the archive to prompt it to regenerate.

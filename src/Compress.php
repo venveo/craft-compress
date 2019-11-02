@@ -83,7 +83,7 @@ class Compress extends Plugin
             function (ModelEvent $event) {
                 /** @var Asset $asset */
                 $asset = $event->sender;
-                $this->compress->handleAssetDeleted($asset);
+                $this->compress->handleAssetUpdated($asset);
             }
         );
 
@@ -93,10 +93,8 @@ class Compress extends Plugin
             function (ModelEvent $event) {
                 /** @var Asset $asset */
                 $asset = $event->sender;
-                if ($asset->scenario === Asset::SCENARIO_REPLACE) {
-                    // TODO:
-                    die('Need to handle replacement');
-                    $this->compress->handleAssetReplaced($asset);
+                if ($asset->scenario === Asset::SCENARIO_REPLACE || $asset->scenario === Asset::SCENARIO_FILEOPS) {
+                    $this->compress->handleAssetUpdated($asset);
                 }
             }
         );
