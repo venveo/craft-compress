@@ -30,6 +30,7 @@ class Archive extends Model
 
     public $dateCreated;
     public $dateUpdated;
+    public $dateLastAccessed;
 
     public $asset;
 
@@ -51,7 +52,7 @@ class Archive extends Model
     /**
      * @return Asset|null
      */
-    public function getAsset(): ?Asset
+    public function getAsset()
     {
         if (!$this->assetId) {
             return null;
@@ -95,15 +96,4 @@ class Archive extends Model
 
         return false;
     }
-//
-//    /**
-//     * @inheritdoc
-//     */
-//    public function rules()
-//    {
-//        return [
-//            ['someAttribute', 'string'],
-//            ['someAttribute', 'default', 'value' => 'Some Default'],
-//        ];
-//    }
 }

@@ -26,7 +26,6 @@ class CreateArchive extends BaseJob
     // =========================================================================
 
     public $archiveUid;
-    public $filename = '';
     public $cacheKey = '';
 
     // Public Methods
@@ -50,7 +49,7 @@ class CreateArchive extends BaseJob
         }
 
         try {
-            Compress::$plugin->compress->createArchiveAsset($archiveRecord, $this->filename);
+            Compress::$plugin->compress->createArchiveAsset($archiveRecord);
         } catch (\Exception $e) {
             Craft::error('Failed to create archive', __METHOD__);
             Craft::error($e->getMessage(), __METHOD__);

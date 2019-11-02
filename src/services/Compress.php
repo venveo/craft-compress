@@ -15,6 +15,7 @@ use craft\base\Component;
 use craft\base\Volume;
 use craft\elements\Asset;
 use craft\elements\db\AssetQuery;
+use craft\helpers\DateTimeHelper;
 use craft\helpers\StringHelper;
 use venveo\compress\Compress as Plugin;
 use venveo\compress\errors\CompressException;
@@ -69,7 +70,7 @@ class Compress extends Component
         // archive.
         $record = $this->getArchiveRecordByHash($hash);
         if ($record instanceof ArchiveRecord && isset($record->assetId)) {
-            $asset = \Craft::$app->assets->getAssetById($record->assetId);
+            $asset = Craft::$app->assets->getAssetById($record->assetId);
             return ArchiveModel::hydrateFromRecord($record, $asset);
         }
 
@@ -86,15 +87,14 @@ class Compress extends Component
         // already and then add it to the queue and set a cache key for the job
         if ($lazy === true) {
             // Make sure we don't run more than one job for the archive
-            if (!\Craft::$app->cache->get($cacheKey)) {
+            if (!Craft::$app->cache->get($cacheKey)) {
                 $job = new CreateArchive([
                     'cacheKey' => $cacheKey,
-                    'archiveUid' => $record->uid,
-                    'filename' => $filename
+                    'archiveUid' => $record->uid
                 ]);
-                $jobId = \Craft::$app->queue->push($job);
-                \Craft::$app->cache->set($cacheKey, true);
-                \Craft::$app->cache->set($cacheKey . ':' . 'jobId', $jobId);
+                $jobId = Craft::$app->queue->push($job);
+                Craft::$app->cache->set($cacheKey, true);
+                Craft::$app->cache->set($cacheKey . ':' . 'jobId', $jobId);
             }
             return ArchiveModel::hydrateFromRecord($record, null);
         }
@@ -184,6 +184,7 @@ class Compress extends Component
         unlink($zipPath);
         $asset = Craft::$app->getAssetIndexer()->indexFile($volume, $finalFilePath);
         $archiveRecord->assetId = $asset->id;
+        $archiveRecord->dateLastAccessed = DateTimeHelper::currentUTCDateTime();
         $archiveRecord->save();
         return ArchiveModel::hydrateFromRecord($archiveRecord, $asset);
     }
@@ -202,6 +203,7 @@ class Compress extends Component
     {
         if (!$archiveRecord instanceof ArchiveRecord) {
             $archiveRecord = new ArchiveRecord();
+            $archiveRecord->dateLastAccessed = DateTimeHelper::currentUTCDateTime();
             $archiveRecord->assetId = $asset->id ?? null;
             $archiveRecord->hash = $this->getHashForAssets($zippedAssets);
             $archiveRecord->save();
@@ -225,7 +227,7 @@ class Compress extends Component
             ];
         }
         $cols = ['archiveId', 'assetId'];
-        \Craft::$app->db->createCommand()->batchInsert(FileRecord::tableName(), $cols, $rows)->execute();
+        Craft::$app->db->createCommand()->batchInsert(FileRecord::tableName(), $cols, $rows)->execute();
 
         $event = new CompressEvent([
             'archiveRecord' => $archiveRecord,
@@ -285,7 +287,7 @@ class Compress extends Component
         $archiveRecordUids = array_unique($archiveRecordUids);
         foreach ($archiveAssets as $archiveAsset) {
             try {
-                \Craft::$app->elements->deleteElementById($archiveAsset);
+                Craft::$app->elements->deleteElementById($archiveAsset);
             } catch (\Throwable $e) {
                 Craft::error('Failed to delete an archive asset after a dependent file was deleted: ' . $e->getMessage(), __METHOD__);
                 Craft::error($e->getTraceAsString(), __METHOD__);
@@ -296,15 +298,15 @@ class Compress extends Component
             foreach ($archiveRecordUids as $recordUid) {
                 $cacheKey = 'Compress:InQueue:' . $recordUid;
                 // Make sure we don't run more than one job for the archive
-                if (!\Craft::$app->cache->get($cacheKey)) {
+                if (!Craft::$app->cache->get($cacheKey)) {
                     $job = new CreateArchive([
                         'cacheKey' => $cacheKey,
                         'archiveUid' => $recordUid
                     ]);
-                    $jobId = \Craft::$app->queue->push($job);
-                    \Craft::$app->cache->set($cacheKey, true);
-                    \Craft::$app->cache->set($cacheKey . ':' . 'jobId', $jobId);
-                    \Craft::info('Regenerating archive after a file was deleted.', __METHOD__);
+                    $jobId = Craft::$app->queue->push($job);
+                    Craft::$app->cache->set($cacheKey, true);
+                    Craft::$app->cache->set($cacheKey . ':' . 'jobId', $jobId);
+                    Craft::info('Regenerating archive after a file was deleted.', __METHOD__);
                 }
             }
         }

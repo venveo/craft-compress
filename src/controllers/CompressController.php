@@ -10,6 +10,7 @@
 
 namespace venveo\compress\controllers;
 
+use craft\helpers\DateTimeHelper;
 use craft\web\Controller;
 use venveo\compress\Compress as Plugin;
 use venveo\compress\errors\CompressException;
@@ -42,6 +43,8 @@ class CompressController extends Controller
             $archiveModel = ArchiveModel::hydrateFromRecord($record);
             // It's possible for an asset ID to exist, but getAsset to return false on soft-deleted assets
             if ($archiveModel->getAsset()) {
+                $record->dateLastAccessed = DateTimeHelper::currentUTCDateTime();
+                $record->save();
                 return \Craft::$app->response->redirect($archiveModel->getAsset()->getUrl());
             }
         }
@@ -62,10 +65,9 @@ class CompressController extends Controller
             }
             return \Craft::$app->response->redirect($asset->asset->getUrl());
         } catch (\Exception $e) {
-            \Craft::$app->response->setStatusCode(500);
             \Craft::error('Archive could not be generated: ' . $e->getMessage(), __METHOD__);
             \Craft::error($e->getTraceAsString(), __METHOD__);
-            throw new CompressException('Archive could not be generated');
+            throw new CompressException('Archive could not be generated: '. $e->getMessage());
         }
     }
 }

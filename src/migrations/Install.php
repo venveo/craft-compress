@@ -56,6 +56,7 @@ class Install extends Migration
                     'id' => $this->primaryKey(),
                     'dateCreated' => $this->dateTime()->notNull(),
                     'dateUpdated' => $this->dateTime()->notNull(),
+                    'dateLastAccessed' => $this->dateTime()->notNull(),
                     'uid' => $this->uid(),
                     'assetId' => $this->integer(),
                     'hash' => $this->string()->notNull(),

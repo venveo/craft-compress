@@ -10,9 +10,6 @@
 
 namespace venveo\compress\models;
 
-use venveo\compress\Compress;
-
-use Craft;
 use craft\base\Model;
 
 /**
@@ -43,7 +40,7 @@ class Settings extends Model
     {
         return [
             ['defaultVolumeHandle', 'string'],
-            ['autoRegenerate', 'boolean'],
+            [['autoRegenerate'], 'boolean'],
             [['maxFileSize', 'maxFileCount'], 'integer'],
         ];
     }
