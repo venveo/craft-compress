@@ -16,6 +16,10 @@ use venveo\compress\errors\CompressException;
 use venveo\compress\models\Archive as ArchiveModel;
 use venveo\compress\records\Archive as ArchiveRecord;
 
+/**
+ * Class CompressController
+ * @package venveo\compress\controllers
+ */
 class CompressController extends Controller
 {
     public $allowAnonymous = ['get-link'];

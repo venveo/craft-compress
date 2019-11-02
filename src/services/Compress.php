@@ -275,14 +275,14 @@ class Compress extends Component
         $fileRecords = FileRecord::find()->where(['=', 'assetId', $asset->id])->with('archive')->all();
 
         $archiveAssets = [];
-        $archiveRecords = [];
+        $archiveRecordUids = [];
         /** @var FileRecord $fileRecord */
         foreach ($fileRecords as $fileRecord) {
             $archiveAssets[] = $fileRecord->archive->assetId;
-            $archiveRecords[] = $fileRecord->archive;
+            $archiveRecordUids[] = $fileRecord->archive->uid;
         }
         $archiveAssets = array_unique($archiveAssets);
-        $archiveRecords = array_unique($archiveRecords);
+        $archiveRecordUids = array_unique($archiveRecordUids);
         foreach ($archiveAssets as $archiveAsset) {
             try {
                 \Craft::$app->elements->deleteElementById($archiveAsset);
@@ -292,14 +292,14 @@ class Compress extends Component
             }
         }
 
-        if (Plugin::$plugin->getSettings()->autoRegenerate === true) {
-            foreach ($archiveRecords as $record) {
-                $cacheKey = 'Compress:InQueue:' . $record->uid;
+        if (Plugin::$plugin->getSettings()->autoRegenerate) {
+            foreach ($archiveRecordUids as $recordUid) {
+                $cacheKey = 'Compress:InQueue:' . $recordUid;
                 // Make sure we don't run more than one job for the archive
                 if (!\Craft::$app->cache->get($cacheKey)) {
                     $job = new CreateArchive([
                         'cacheKey' => $cacheKey,
-                        'archiveUid' => $record->uid
+                        'archiveUid' => $recordUid
                     ]);
                     $jobId = \Craft::$app->queue->push($job);
                     \Craft::$app->cache->set($cacheKey, true);
