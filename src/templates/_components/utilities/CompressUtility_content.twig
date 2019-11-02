@@ -2,13 +2,14 @@
 
 {% set archives = craft.compress.archives() %}
 <div class="readable">
-    <table class="data fullwidth fixed-layout">
+    <table class="data fullwidth collapsible">
         <thead>
         <tr>
             <th>Archive ID</th>
             <th>Asset</th>
             <th>Date Created</th>
             <th>Date Updated</th>
+            <th>Date Last Accessed</th>
         </tr>
         </thead>
         <tbody>
@@ -16,9 +17,10 @@
         {% for item in archives %}
             <tr>
                 <td>{{ item.id }}</td>
-                <td>{% if item.getAsset() %}{{ item.getAsset().title }}{% else %}Not Ready{% endif %}</td>
-                <td>{{ item.dateCreated|date('d/m/Y H:i:s') }}</td>
-                <td>{{ item.dateUpdated|date('d/m/Y H:i:s') }}</td>
+                <td>{% if item.isReady() %}{{ item.asset.title }}{% else %}Not Ready{% endif %}</td>
+                <td>{{ item.dateCreated|date('short') }}</td>
+                <td>{{ item.dateUpdated|date('short') }}</td>
+                <td>{{ item.dateLastAccessed|date('short') }}</td>
             </tr>
         {% endfor %}
         </tbody>
