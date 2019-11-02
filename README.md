@@ -95,4 +95,14 @@ generates a lazy link to download all assets of a particular kind.
 {% endfor %}
 ```
 
-Brought to you by [Venveo](https://venveo.com)
+## Caveats & Limitations
+- Consider the Assets created by Compress to be temporary. Don't try
+to use them in Asset relation fields.
+- There's currently no way to override the filename on archives due to
+technical limitations.
+- There's currently nothing to purge stale archive assets, so if you have a
+template that queries a variable set of assets, each time the result
+set changes, a new archive asset will be created and the prior will not
+be automatically deleted.
+
+Brought to you by [Venveo](https://www.venveo.com)
