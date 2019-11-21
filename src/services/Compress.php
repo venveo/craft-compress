@@ -38,13 +38,13 @@ class Compress extends Component
      * Called right before saving the archive records. You may take this
      * opportunity to modify the list of files being stored in the archive
      */
-    public const EVENT_BEFORE_CONFIGURE_ARCHIVE = 'EVENT_BEFORE_CONFIGURE_ARCHIVE';
+    const EVENT_BEFORE_CONFIGURE_ARCHIVE = 'EVENT_BEFORE_CONFIGURE_ARCHIVE';
 
     /**
      * Called right after successfully saving the Archive record and its File
      * records.
      */
-    public const EVENT_AFTER_CONFIGURE_ARCHIVE = 'EVENT_AFTER_CONFIGURE_ARCHIVE';
+    const EVENT_AFTER_CONFIGURE_ARCHIVE = 'EVENT_AFTER_CONFIGURE_ARCHIVE';
 
     /**
      * @param AssetQuery $query
