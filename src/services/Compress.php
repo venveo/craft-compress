@@ -259,7 +259,7 @@ class Compress extends Component
      * @param $hash
      * @return ArchiveRecord|null
      */
-    private function getArchiveRecordByHash($hash): ?ArchiveRecord
+    private function getArchiveRecordByHash($hash): ArchiveRecord
     {
         return ArchiveRecord::findOne(['hash' => $hash]);
     }
