@@ -1,6 +1,10 @@
 # Compress Changelog
 
-## 1.0.2 - 2019-11-20
+## 1.0.3 - 2019-11-22
+### Fixed
+- Improved compatibility with PHP 7.0.x (again-again)
+
+## 1.0.2 - 2019-11-21
 ### Fixed
 - Improved compatibility with PHP 7.0.x (again)
 

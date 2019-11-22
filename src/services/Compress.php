@@ -108,7 +108,7 @@ class Compress extends Component
         }
     }
 
-    public function createArchiveRecord($assets, $archiveAsset = null): ArchiveRecord
+    public function createArchiveRecord($assets, $archiveAsset = null)
     {
         $archive = $this->createArchiveRecords($assets, $archiveAsset);
         return $archive;
@@ -199,7 +199,7 @@ class Compress extends Component
      * @throws \yii\base\InvalidConfigException
      * @throws \yii\db\Exception
      */
-    private function createArchiveRecords($zippedAssets, $asset, $archiveRecord = null): ArchiveRecord
+    private function createArchiveRecords($zippedAssets, $asset, $archiveRecord = null)
     {
         if (!$archiveRecord instanceof ArchiveRecord) {
             $archiveRecord = new ArchiveRecord();
@@ -259,7 +259,7 @@ class Compress extends Component
      * @param $hash
      * @return ArchiveRecord|null
      */
-    private function getArchiveRecordByHash($hash): ArchiveRecord
+    private function getArchiveRecordByHash($hash)
     {
         return ArchiveRecord::findOne(['hash' => $hash]);
     }
@@ -269,7 +269,7 @@ class Compress extends Component
      *
      * @param Asset $asset
      */
-    public function handleAssetUpdated(Asset $asset): void
+    public function handleAssetUpdated(Asset $asset)
     {
         // Get the files this affects and the archives. We're just going to
         // delete the asset for the archive to prompt it to regenerate.
