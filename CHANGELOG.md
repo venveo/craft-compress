@@ -1,6 +1,6 @@
 # Compress Changelog
 
-## 4.0.0 - Unreleased
+## 4.0.0 - 2022-06-16
 ### Change
 - Compress now requires Craft 4
 - Compress now requires PHP 8.0.1
