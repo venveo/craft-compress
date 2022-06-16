@@ -12,11 +12,11 @@ namespace venveo\compress\services;
 
 use Craft;
 use craft\base\Component;
-use craft\base\Volume;
 use craft\elements\Asset;
 use craft\elements\db\AssetQuery;
 use craft\helpers\DateTimeHelper;
 use craft\helpers\StringHelper;
+use craft\models\Volume;
 use venveo\compress\Compress as Plugin;
 use venveo\compress\errors\CompressException;
 use venveo\compress\events\CompressEvent;
@@ -57,7 +57,7 @@ class Compress extends Component
         // Get the assets and create a unique hash to represent them
         if ($query instanceof AssetQuery) {
             $assets = $query->all();
-        } elseif (is_array($query)) {
+        } elseif ($query instanceof \ArrayAccess) {
             $assets = $query;
         } else {
             Craft::error('Unexpected input provided for asset query', __METHOD__);
@@ -120,16 +120,14 @@ class Compress extends Component
      * @param string $assetName
      * @return ArchiveModel
      * @throws \craft\errors\VolumeException
-     * @throws \craft\errors\VolumeObjectExistsException
-     * @throws \craft\errors\VolumeObjectNotFoundException
      * @throws \Exception
      */
-    public function createArchiveAsset(ArchiveRecord $archiveRecord)
+    public function createArchiveAsset(ArchiveRecord $archiveRecord): ?ArchiveModel
     {
         $uuid = StringHelper::UUID();
         $fileAssetRecords = $archiveRecord->fileAssets;
         $assetIds = [];
-        /** @var File $fileAssetRecord */
+        /** @var FileRecord $fileAssetRecord */
         foreach ($fileAssetRecords as $fileAssetRecord) {
             $assetIds[] = $fileAssetRecord->assetId;
         }
@@ -180,9 +178,11 @@ class Compress extends Component
             throw new CompressException('Default volume not set.');
         }
         $finalFilePath = $assetName;
-        $volume->createFileByStream($finalFilePath, $stream, []);
+        $fs = $volume->getFs();
+        $fs->writeFileFromStream($finalFilePath, $stream, []);
         unlink($zipPath);
-        $asset = Craft::$app->getAssetIndexer()->indexFile($volume, $finalFilePath);
+        $session = Craft::$app->getAssetIndexer()->createIndexingSession([$volume]);
+        $asset = Craft::$app->getAssetIndexer()->indexFile($volume, $finalFilePath, $session->id);
         $archiveRecord->assetId = $asset->id;
         $archiveRecord->dateLastAccessed = DateTimeHelper::currentUTCDateTime();
         $archiveRecord->save();
@@ -219,7 +219,6 @@ class Compress extends Component
         $archiveRecord = $event->archiveRecord;
 
         $rows = [];
-        /** @var Asset $zippedAsset */
         foreach ($zippedAssets as $zippedAsset) {
             $rows[] = [
                 $archiveRecord->id,
@@ -248,9 +247,13 @@ class Compress extends Component
     {
         $ids = [];
         foreach ($assets as $asset) {
-            $ids[] = [$asset->id];
+            $updatedAt = $asset->dateUpdated->getTimestamp();
+            $key = $asset->id . ':' . $updatedAt;
+            $ids[] = $key;
         }
-        return md5(\GuzzleHttp\json_encode($ids));
+        sort($ids);
+        $hashKey = implode('', $ids);
+        return md5($hashKey);
     }
 
     /**
@@ -334,7 +337,7 @@ class Compress extends Component
      * @param null $limit
      * @return array
      */
-    public function getArchives($offset = 0, $limit = null): array
+    public function getArchives(?int $offset = 0, ?int $limit = null): array
     {
         $records = ArchiveRecord::find();
         if ($offset) {
@@ -352,12 +355,12 @@ class Compress extends Component
     }
 
     /**
-     * Get an archive model from it's record's UID
+     * Get an archive model from its record's UID
      *
      * @param $uid
      * @return ArchiveModel|null
      */
-    public function getArchiveModelByUID($uid)
+    public function getArchiveModelByUID($uid): ?ArchiveModel
     {
         $record = ArchiveRecord::find()->where(['=', 'uid', $uid])->one();
         if (!$record instanceof ArchiveRecord) {

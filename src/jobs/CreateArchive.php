@@ -34,18 +34,18 @@ class CreateArchive extends BaseJob
     /**
      * @inheritdoc
      */
-    public function execute($queue)
+    public function execute($queue): void
     {
         // If it's not in the cache, we'll assume it got completed on-demand
         if (!\Craft::$app->cache->get($this->cacheKey)) {
             Craft::info('Archive already completed');
-            return true;
+            return;
         }
 
         $archiveRecord = ArchiveRecord::find()->where(['=', 'uid', $this->archiveUid])->one();
         if (!$archiveRecord instanceof ArchiveRecord) {
             Craft::error('Archive was deleted before it could be created');
-            return false;
+            return;
         }
 
         try {
@@ -58,7 +58,7 @@ class CreateArchive extends BaseJob
             \Craft::$app->cache->delete($this->cacheKey);
             \Craft::$app->cache->delete($this->cacheKey . ':jobId');
             // Go ahead and blow up
-            return false;
+            return;
         }
         \Craft::$app->cache->delete($this->cacheKey);
         \Craft::$app->cache->delete($this->cacheKey . ':jobId');
@@ -70,7 +70,7 @@ class CreateArchive extends BaseJob
     /**
      * @inheritdoc
      */
-    protected function defaultDescription(): string
+    protected function defaultDescription(): ?string
     {
         return Craft::t('compress', 'Creating Archive');
     }

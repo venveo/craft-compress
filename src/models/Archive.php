@@ -14,25 +14,29 @@ use craft\base\Model;
 use craft\db\ActiveRecord;
 use craft\elements\Asset;
 use craft\helpers\UrlHelper;
+use DateTime;
 use venveo\compress\Compress as Plugin;
 
 /**
  * @author    Venveo
  * @package   Compress
  * @since     1.0.0
+ *
+ * @property-read mixed $contents
+ * @property-read null|string $lazyLink
  */
 class Archive extends Model
 {
-    public $id;
-    public $uid;
-    public $assetId;
-    public $hash;
+    public ?int $id = null;
+    public ?string $uid = null;
+    public ?int $assetId = null;
+    public ?string $hash = null;
 
-    public $dateCreated;
-    public $dateUpdated;
-    public $dateLastAccessed;
+    public ?DateTime $dateUpdated;
+    public ?DateTime $dateCreated;
+    public ?DateTime $dateLastAccessed = null;
 
-    public $asset;
+    public ?Asset $asset = null;
 
 
     /**
@@ -52,7 +56,7 @@ class Archive extends Model
     /**
      * @return Asset|null
      */
-    public function getAsset()
+    public function getAsset($siteId = null): ?Asset
     {
         if (!$this->assetId) {
             return null;
@@ -60,18 +64,25 @@ class Archive extends Model
         if ($this->asset instanceof Asset) {
             return $this->asset;
         }
+        if (!$siteId) {
+            $siteId = \Craft::$app->sites?->currentSite?->id;
+        }
 
-        $this->asset = \Craft::$app->assets->getAssetById($this->assetId);
+        $this->asset = \Craft::$app->assets->getAssetById($this->assetId, $siteId);
         return $this->asset;
     }
 
     /**
      * @return string|null
      */
-    public function getLazyLink()
+    public function getLazyLink(): ?string
     {
         if ($this->asset instanceof Asset) {
-            return $this->asset->getUrl();
+            // Ensure we _can_ get a url for the asset
+            $assetUrl = $this->asset->getUrl();
+            if($assetUrl) {
+                return $assetUrl;
+            }
         }
         return UrlHelper::actionUrl('compress/compress/get-link', ['uid' => $this->uid]);
     }

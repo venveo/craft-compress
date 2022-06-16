@@ -4,8 +4,9 @@
 namespace venveo\compress\records;
 
 use craft\db\ActiveRecord;
+use craft\helpers\Db;
 use craft\records\Asset;
-use Ramsey\Uuid\Uuid;
+use DateTime;
 use yii\db\ActiveQueryInterface;
 
 /**
@@ -14,7 +15,6 @@ use yii\db\ActiveQueryInterface;
  * @property \yii\db\ActiveQueryInterface $asset
  * @property mixed $fileAssets
  * @property integer id
- * @property Uuid uid
  * @property integer assetId
  * @property \DateTime dateLastAccessed
  * @property string hash
@@ -42,15 +42,14 @@ class Archive extends ActiveRecord
         return $this->hasMany(File::class, ['archiveId' => 'id']);
     }
 
-    /**
-     * @inheritdoc
-     */
-    public function datetimeAttributes(): array
+    protected function prepareForDb(): void
     {
-        $attributes = parent::datetimeAttributes();
-
-        $attributes[] = 'dateLastAccessed';
-
-        return $attributes;
+        parent::prepareForDb();
+        $now = Db::prepareDateForDb(new DateTime());
+        if ($this->getIsNewRecord()) {
+            if (!isset($this->dateLastAccessed)) {
+                $this->dateLastAccessed = $now;
+            }
+        }
     }
 }

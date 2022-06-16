@@ -10,14 +10,13 @@
 
 namespace venveo\compress\controllers;
 
-use Craft;
-use craft\elements\Asset;
 use craft\helpers\DateTimeHelper;
 use craft\web\Controller;
 use venveo\compress\Compress as Plugin;
 use venveo\compress\errors\CompressException;
 use venveo\compress\models\Archive as ArchiveModel;
 use venveo\compress\records\Archive as ArchiveRecord;
+use yii\base\InvalidConfigException;
 
 /**
  * Class CompressController
@@ -25,18 +24,20 @@ use venveo\compress\records\Archive as ArchiveRecord;
  */
 class CompressController extends Controller
 {
-    public $allowAnonymous = ['get-link'];
+    public int|bool|array $allowAnonymous = ['get-link'];
 
     /**
      * Gets a direct link to the asset
      * @param $uid
-     * @return \craft\web\Response|string|\yii\console\Response
+     * @return \yii\web\Response
      * @throws CompressException
+     * @throws InvalidConfigException
      */
     public function actionGetLink($uid)
     {
+        /** @var ArchiveRecord $record */
         $record = ArchiveRecord::find()->where(['=', 'uid', $uid])->one();
-        if (!$record instanceof ArchiveRecord) {
+        if (!$record) {
             return \Craft::$app->response->setStatusCode(404, 'Archive could not be found');
         }
 
@@ -45,9 +46,14 @@ class CompressController extends Controller
             $archiveModel = ArchiveModel::hydrateFromRecord($record);
             // It's possible for an asset ID to exist, but getAsset to return false on soft-deleted assets
             if ($archiveModel->getAsset()) {
-                $record->dateLastAccessed = DateTimeHelper::currentUTCDateTime();
-                $record->save();
-                return \Craft::$app->response->redirect($archiveModel->getAsset()->getUrl());
+                $assetUrl = $archiveModel->getAsset()->getUrl();
+                if ($assetUrl) {
+                    $record->dateLastAccessed = DateTimeHelper::currentUTCDateTime();
+                    $record->save();
+                    return \Craft::$app->response->redirect($archiveModel->getAsset()->getUrl());
+                }
+
+                return \Craft::$app->response->setStatusCode(404, 'Could not produce zip file URL.');
             }
         }
 
@@ -69,7 +75,7 @@ class CompressController extends Controller
         } catch (\Exception $e) {
             \Craft::error('Archive could not be generated: ' . $e->getMessage(), __METHOD__);
             \Craft::error($e->getTraceAsString(), __METHOD__);
-            throw new CompressException('Archive could not be generated: '. $e->getMessage());
+            throw new CompressException('Archive could not be generated: ' . $e->getMessage());
         }
     }
 }
