@@ -34,7 +34,7 @@ class CreateArchive extends BaseJob
     /**
      * @inheritdoc
      */
-    public function execute($queue)
+    public function execute($queue): void
     {
         // If it's not in the cache, we'll assume it got completed on-demand
         if (!\Craft::$app->cache->get($this->cacheKey)) {
@@ -70,7 +70,7 @@ class CreateArchive extends BaseJob
     /**
      * @inheritdoc
      */
-    protected function defaultDescription(): string
+    protected function defaultDescription(): ?string
     {
         return Craft::t('compress', 'Creating Archive');
     }
