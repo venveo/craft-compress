@@ -57,7 +57,7 @@ class Compress extends Component
         // Get the assets and create a unique hash to represent them
         if ($query instanceof AssetQuery) {
             $assets = $query->all();
-        } elseif (is_array($query)) {
+        } elseif ($query instanceof \ArrayAccess) {
             $assets = $query;
         } else {
             Craft::error('Unexpected input provided for asset query', __METHOD__);
@@ -122,7 +122,7 @@ class Compress extends Component
      * @throws \craft\errors\VolumeException
      * @throws \Exception
      */
-    public function createArchiveAsset(ArchiveRecord $archiveRecord)
+    public function createArchiveAsset(ArchiveRecord $archiveRecord): ?ArchiveModel
     {
         $uuid = StringHelper::UUID();
         $fileAssetRecords = $archiveRecord->fileAssets;
@@ -219,7 +219,6 @@ class Compress extends Component
         $archiveRecord = $event->archiveRecord;
 
         $rows = [];
-        /** @var Asset $zippedAsset */
         foreach ($zippedAssets as $zippedAsset) {
             $rows[] = [
                 $archiveRecord->id,
@@ -248,9 +247,13 @@ class Compress extends Component
     {
         $ids = [];
         foreach ($assets as $asset) {
-            $ids[] = [$asset->id];
+            $updatedAt = $asset->dateUpdated->getTimestamp();
+            $key = $asset->id . ':' . $updatedAt;
+            $ids[] = $key;
         }
-        return md5(\GuzzleHttp\json_encode($ids));
+        sort($ids);
+        $hashKey = implode('', $ids);
+        return md5($hashKey);
     }
 
     /**
@@ -334,7 +337,7 @@ class Compress extends Component
      * @param null $limit
      * @return array
      */
-    public function getArchives($offset = 0, $limit = null): array
+    public function getArchives(?int $offset = 0, ?int $limit = null): array
     {
         $records = ArchiveRecord::find();
         if ($offset) {
@@ -352,12 +355,12 @@ class Compress extends Component
     }
 
     /**
-     * Get an archive model from it's record's UID
+     * Get an archive model from its record's UID
      *
      * @param $uid
      * @return ArchiveModel|null
      */
-    public function getArchiveModelByUID($uid)
+    public function getArchiveModelByUID($uid): ?ArchiveModel
     {
         $record = ArchiveRecord::find()->where(['=', 'uid', $uid])->one();
         if (!$record instanceof ArchiveRecord) {

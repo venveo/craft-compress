@@ -4,6 +4,7 @@
 ### Change
 - Compress now requires Craft 4
 - Compress now requires PHP 8.0.1
+- Hashing mechanism now accounts for dateUpdated and sorts records. All zip files will need to be regenerated.
 
 ## 1.0.3 - 2019-11-22
 ### Fixed
