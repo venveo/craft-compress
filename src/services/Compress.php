@@ -12,11 +12,11 @@ namespace venveo\compress\services;
 
 use Craft;
 use craft\base\Component;
-use craft\base\Volume;
 use craft\elements\Asset;
 use craft\elements\db\AssetQuery;
 use craft\helpers\DateTimeHelper;
 use craft\helpers\StringHelper;
+use craft\models\Volume;
 use venveo\compress\Compress as Plugin;
 use venveo\compress\errors\CompressException;
 use venveo\compress\events\CompressEvent;
@@ -120,8 +120,6 @@ class Compress extends Component
      * @param string $assetName
      * @return ArchiveModel
      * @throws \craft\errors\VolumeException
-     * @throws \craft\errors\VolumeObjectExistsException
-     * @throws \craft\errors\VolumeObjectNotFoundException
      * @throws \Exception
      */
     public function createArchiveAsset(ArchiveRecord $archiveRecord)
@@ -129,7 +127,7 @@ class Compress extends Component
         $uuid = StringHelper::UUID();
         $fileAssetRecords = $archiveRecord->fileAssets;
         $assetIds = [];
-        /** @var File $fileAssetRecord */
+        /** @var FileRecord $fileAssetRecord */
         foreach ($fileAssetRecords as $fileAssetRecord) {
             $assetIds[] = $fileAssetRecord->assetId;
         }
@@ -180,9 +178,11 @@ class Compress extends Component
             throw new CompressException('Default volume not set.');
         }
         $finalFilePath = $assetName;
-        $volume->createFileByStream($finalFilePath, $stream, []);
+        $fs = $volume->getFs();
+        $fs->writeFileFromStream($finalFilePath, $stream, []);
         unlink($zipPath);
-        $asset = Craft::$app->getAssetIndexer()->indexFile($volume, $finalFilePath);
+        $session = Craft::$app->getAssetIndexer()->createIndexingSession([$volume]);
+        $asset = Craft::$app->getAssetIndexer()->indexFile($volume, $finalFilePath, $session->id);
         $archiveRecord->assetId = $asset->id;
         $archiveRecord->dateLastAccessed = DateTimeHelper::currentUTCDateTime();
         $archiveRecord->save();

@@ -25,7 +25,7 @@ use venveo\compress\records\Archive as ArchiveRecord;
  */
 class CompressController extends Controller
 {
-    public $allowAnonymous = ['get-link'];
+    public int|bool|array $allowAnonymous = ['get-link'];
 
     /**
      * Gets a direct link to the asset

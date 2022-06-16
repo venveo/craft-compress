@@ -14,6 +14,7 @@ use craft\base\Model;
 use craft\db\ActiveRecord;
 use craft\elements\Asset;
 use craft\helpers\UrlHelper;
+use DateTime;
 use venveo\compress\Compress as Plugin;
 
 /**
@@ -28,9 +29,9 @@ class Archive extends Model
     public $assetId;
     public $hash;
 
-    public $dateCreated;
-    public $dateUpdated;
-    public $dateLastAccessed;
+    public ?DateTime $dateUpdated;
+    public ?DateTime $dateCreated;
+    public ?DateTime $dateLastAccessed = null;
 
     public $asset;
 
