@@ -1,4 +1,4 @@
-# Compress plugin for Craft CMS 3.x
+# Compress plugin for Craft CMS 4.x
 
 Compress exposes a variable within Twig to create zip archives from Asset queries as a native Craft asset itself.
 
@@ -16,7 +16,7 @@ asset is deleted or updated in Craft.
 
 ## Requirements
 
-- Craft CMS 3.2.0 or later.
+- Craft CMS 4.0.0 or later.
 - ext-zip PHP extension for creating zip files (also conveniently a Craft requirement)
 
 ## Installation
