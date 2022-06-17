@@ -81,13 +81,6 @@ class Archive extends Model
      */
     public function getLazyLink(): ?string
     {
-        if ($this->asset instanceof Asset) {
-            // Ensure we _can_ get a url for the asset
-            $assetUrl = $this->asset->getUrl();
-            if($assetUrl) {
-                return $assetUrl;
-            }
-        }
         return UrlHelper::actionUrl('compress/compress/get-link', ['uid' => $this->uid]);
     }
 

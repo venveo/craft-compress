@@ -15,6 +15,7 @@ use craft\base\Plugin;
 use craft\elements\Asset;
 use craft\events\ModelEvent;
 use craft\events\RegisterComponentTypesEvent;
+use craft\services\Gc;
 use craft\services\Utilities;
 use craft\web\twig\variables\CraftVariable;
 use venveo\compress\models\Settings;
@@ -85,6 +86,12 @@ class Compress extends Plugin
                 }
             }
         );
+
+        Event::on(Gc::class, Gc::EVENT_RUN, function () {
+            if ($this->getSettings()->deleteStaleArchivesHours) {
+                $this->compress->deleteStaleArchives(25);
+            }
+        });
 
 
         // Register our utility

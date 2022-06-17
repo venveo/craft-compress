@@ -38,6 +38,11 @@ class Settings extends Model
     public bool $autoRegenerate = true;
 
     /**
+     * How many hours do we wait before an archive is considered stale?
+     */
+    public int $deleteStaleArchivesHours = 0;
+
+    /**
      * The maximum sum of input files we can compress. Set to 0 for no limit
      */
     public int $maxFileSize = 0;
@@ -55,7 +60,7 @@ class Settings extends Model
         return [
             [['defaultVolumeHandle', 'defaultVolumeSubdirectory'], 'string'],
             [['autoRegenerate'], 'boolean'],
-            [['maxFileSize', 'maxFileCount'], 'integer'],
+            [['maxFileSize', 'maxFileCount', 'deleteStaleArchivesHours'], 'integer'],
         ];
     }
 }

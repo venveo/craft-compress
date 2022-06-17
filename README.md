@@ -59,7 +59,7 @@ settings and life choices.
     {# 
     the archive variable is now set to an Archive model, but since 
     we're in lazy mode, the getAsset() response may be null. We can
-    either check the .isReady method or we can just get the lazyLink
+    either check the .isReady method or we can just get the lazyLink, which will give us an indirect link to the asset.
     #}
     {% if archive.isReady %}
         {% set archiveAsset = archive.getAsset() %}
@@ -98,8 +98,6 @@ generates a lazy link to download all assets of a particular kind.
 ## Caveats & Limitations
 - Consider the Assets created by Compress to be temporary. Don't try
 to use them in Asset relation fields.
-- There's currently nothing to purge stale archive assets, so if you have a
-template that queries a variable set of assets, each time the result
 set changes, a new archive asset will be created and the prior will not
 be automatically deleted.
 

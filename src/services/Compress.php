@@ -17,6 +17,7 @@ use craft\elements\db\AssetQuery;
 use craft\helpers\App;
 use craft\helpers\ArrayHelper;
 use craft\helpers\DateTimeHelper;
+use craft\helpers\Db;
 use craft\helpers\FileHelper;
 use craft\helpers\StringHelper;
 use craft\models\Volume;
@@ -28,6 +29,7 @@ use venveo\compress\models\Archive as ArchiveModel;
 use venveo\compress\records\Archive as ArchiveRecord;
 use venveo\compress\records\File as FileRecord;
 use yii\db\Exception;
+use yii\db\StaleObjectException;
 use ZipArchive;
 
 
@@ -384,5 +386,37 @@ class Compress extends Component
         }
         return ArchiveModel::hydrateFromRecord($record);
     }
+
+
+    /**
+     * Deletes registered 404s that haven't been hit in a while
+     * @param null $limit
+     * @throws Throwable
+     * @throws StaleObjectException
+     */
+    public function deleteStaleArchives($limit = null): void
+    {
+        $hours = Plugin::getInstance()->getSettings()->deleteStaleArchivesHours;
+
+        $interval = DateTimeHelper::secondsToInterval($hours * 60 * 60);
+        $expire = DateTimeHelper::currentUTCDateTime();
+        $pastTime = $expire->sub($interval);
+
+        $query = ArchiveRecord::find()
+            ->andWhere(['<', 'dateLastAccessed', Db::prepareDateForDb($pastTime)]);
+
+        if ($limit) {
+            $query->limit($limit);
+        }
+        $archives = $query->all();
+        foreach($archives as $archive) {
+            $assetId = $archive->assetId;
+            if ($assetId) {
+                Craft::$app->elements->deleteElementById($assetId, null, null, true);
+            }
+            $archive->delete();
+        }
+    }
+
 
 }

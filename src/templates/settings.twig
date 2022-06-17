@@ -68,3 +68,14 @@
      instructions: 'When enabled, Compress will automatically regenerate archives when one of its dependent files is changed or removed.'|t('compress'),
      on: settings['autoRegenerate'],
  }) }}
+
+
+{{ forms.textField({
+    type:         'number',
+    label:        "How long to wait before an archive is considered stale"|t('compress'),
+    instructions: "Enter how many hours to wait before a generated archive is considered stale and can be deleted."|t('compress'),
+    id:           'deleteStaleArchivesHours',
+    name:         'deleteStaleArchivesHours',
+    value:        settings.deleteStaleArchivesHours,
+    errors:       settings.getErrors('deleteStaleArchivesHours')
+}) }}
