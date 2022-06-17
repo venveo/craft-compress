@@ -34,16 +34,10 @@ use yii\base\Event;
  */
 class Compress extends Plugin
 {
-    // Static Properties
-    // =========================================================================
-
     /**
      * @var Compress
      */
     public static $plugin;
-
-    // Public Properties
-    // =========================================================================
 
     /**
      * @var string
@@ -52,9 +46,6 @@ class Compress extends Plugin
 
     public bool $hasCpSettings = true;
 
-    // Public Methods
-    // =========================================================================
-
     /**
      * @inheritdoc
      */
@@ -62,10 +53,6 @@ class Compress extends Plugin
     {
         parent::init();
         self::$plugin = $this;
-
-        $this->setComponents([
-            'compress' => CompressService::class
-        ]);
 
         Event::on(
             CraftVariable::class,
@@ -111,13 +98,25 @@ class Compress extends Plugin
 
     }
 
+    /**
+     * @inheritdoc
+     */
+    public static function config(): array
+    {
+        return [
+            'components' => [
+                'compress' => ['class' => CompressService::class]
+            ],
+        ];
+    }
+
     // Protected Methods
     // =========================================================================
 
     /**
      * @inheritdoc
      */
-    protected function createSettingsModel(): ?\craft\base\Model
+    protected function createSettingsModel(): Settings
     {
         return new Settings();
     }
