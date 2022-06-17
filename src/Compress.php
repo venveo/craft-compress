@@ -42,7 +42,7 @@ class Compress extends Plugin
     /**
      * @var string
      */
-    public string $schemaVersion = '1.0.0';
+    public string $schemaVersion = '4.0.1';
 
     public bool $hasCpSettings = true;
 

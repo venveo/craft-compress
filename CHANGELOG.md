@@ -3,6 +3,7 @@
 ## 4.0.1 - 2022-06-17
 ### Added
 - Added "Default Volume Subdirectory" settings to control where assets are stored.
+- Added ability to specify output archive name
 
 ### Changed
 - Archives created in volumes without public URLs will now be proxied through the server to be fulfilled

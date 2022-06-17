@@ -54,7 +54,7 @@ settings and life choices.
     Second parameter is whether we want the archive generated on page 
     load or lazily.
     #}
-    {% set archive = craft.compress.zip(assets, true) %}
+    {% set archive = craft.compress.zip(assets, true, 'My Photos') %}
     
     {# 
     the archive variable is now set to an Archive model, but since 
@@ -98,8 +98,6 @@ generates a lazy link to download all assets of a particular kind.
 ## Caveats & Limitations
 - Consider the Assets created by Compress to be temporary. Don't try
 to use them in Asset relation fields.
-- There's currently no way to override the filename on archives due to
-technical limitations.
 - There's currently nothing to purge stale archive assets, so if you have a
 template that queries a variable set of assets, each time the result
 set changes, a new archive asset will be created and the prior will not
