@@ -24,11 +24,20 @@
 {{ forms.selectField({
     first: true,
     label: 'Default Volume'|t('compress'),
-    instructions: 'Select the volume  for archive storage'|t('compress'),
+    instructions: 'When the Compress plugin is used, the ephemeral archives generated will be stored in this volume.'|t('compress'),
     id: 'defaultVolumeHandle',
     name: 'defaultVolumeHandle',
-    value: settings['defaultVolumeHandle'],
-    options: options
+    value: settings.defaultVolumeHandle,
+    options: options,
+}) }}
+
+{{ forms.textField({
+    name: 'defaultVolumeSubdirectory',
+    label: 'Default Upload Location'|t('compress'),
+    value: settings.defaultVolumeSubdirectory,
+    instructions: "Where archive assets should be stored (relative to **Default Volume**). If this volume doesn't have public URLs, the archives will be proxied through the server to the requester."|t('compress'),
+    placeholder: 'path/to/subfolder'|t('compress'),
+    errors: settings.getErrors('defaultVolumeSubdirectory')
 }) }}
 
 {{ forms.textField({
@@ -59,3 +68,14 @@
      instructions: 'When enabled, Compress will automatically regenerate archives when one of its dependent files is changed or removed.'|t('compress'),
      on: settings['autoRegenerate'],
  }) }}
+
+
+{{ forms.textField({
+    type:         'number',
+    label:        "How long to wait before an archive is considered stale"|t('compress'),
+    instructions: "Enter how many hours to wait before a generated archive is considered stale and can be deleted."|t('compress'),
+    id:           'deleteStaleArchivesHours',
+    name:         'deleteStaleArchivesHours',
+    value:        settings.deleteStaleArchivesHours,
+    errors:       settings.getErrors('deleteStaleArchivesHours')
+}) }}

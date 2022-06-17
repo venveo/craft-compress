@@ -29,6 +29,16 @@ return [
      * Default: null
      */
     'defaultVolumeHandle' => null,
+    
+    /**
+     * How many hours do we wait before an archive is considered stale?
+     */
+    'deleteStaleArchivesHours' => 0,
+
+    /**
+     * An optional subdirectory to put zipped files in
+     */
+    'defaultVolumeSubdirectory' => '',
 
     /**
      * If set to true, queue jobs will be dispatched to regenerate an archive

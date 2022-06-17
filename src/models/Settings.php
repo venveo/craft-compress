@@ -23,15 +23,34 @@ class Settings extends Model
     // =========================================================================
 
     /**
-     * @var string
+     * The handle for the volume where archives are stored
      */
-    public $defaultVolumeHandle = '';
+    public string $defaultVolumeHandle = '';
 
-    public $autoRegenerate = true;
+    /**
+     * An optional subdirectory to put zipped files in
+     */
+    public ?string $defaultVolumeSubdirectory = '';
 
-    public $maxFileSize = 0;
+    /**
+     * Should we automatically regenerate
+     */
+    public bool $autoRegenerate = true;
 
-    public $maxFileCount = 0;
+    /**
+     * How many hours do we wait before an archive is considered stale?
+     */
+    public int $deleteStaleArchivesHours = 0;
+
+    /**
+     * The maximum sum of input files we can compress. Set to 0 for no limit
+     */
+    public int $maxFileSize = 0;
+
+    /**
+     * The maximum number of input files we can compress. Set to 0 for no limit
+     */
+    public int $maxFileCount = 0;
 
     /**
      * @inheritdoc
@@ -39,9 +58,9 @@ class Settings extends Model
     public function rules(): array
     {
         return [
-            ['defaultVolumeHandle', 'string'],
+            [['defaultVolumeHandle', 'defaultVolumeSubdirectory'], 'string'],
             [['autoRegenerate'], 'boolean'],
-            [['maxFileSize', 'maxFileCount'], 'integer'],
+            [['maxFileSize', 'maxFileCount', 'deleteStaleArchivesHours'], 'integer'],
         ];
     }
 }

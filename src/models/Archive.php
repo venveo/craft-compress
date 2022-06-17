@@ -13,9 +13,11 @@ namespace venveo\compress\models;
 use craft\base\Model;
 use craft\db\ActiveRecord;
 use craft\elements\Asset;
+use craft\elements\db\AssetQuery;
 use craft\helpers\UrlHelper;
 use DateTime;
 use venveo\compress\Compress as Plugin;
+use yii\base\InvalidConfigException;
 
 /**
  * @author    Venveo
@@ -31,6 +33,7 @@ class Archive extends Model
     public ?string $uid = null;
     public ?int $assetId = null;
     public ?string $hash = null;
+    public ?string $filename = null;
 
     public ?DateTime $dateUpdated;
     public ?DateTime $dateCreated;
@@ -74,22 +77,20 @@ class Archive extends Model
 
     /**
      * @return string|null
+     * @throws InvalidConfigException
      */
     public function getLazyLink(): ?string
     {
-        if ($this->asset instanceof Asset) {
-            // Ensure we _can_ get a url for the asset
-            $assetUrl = $this->asset->getUrl();
-            if($assetUrl) {
-                return $assetUrl;
-            }
-        }
         return UrlHelper::actionUrl('compress/compress/get-link', ['uid' => $this->uid]);
     }
 
-    public function getContents()
+    /**
+     * Returns an AssetQuery configured to include the assets within this archive
+     * @return \craft\elements\db\AssetQuery
+     */
+    public function getContents(): AssetQuery
     {
-        return Plugin::$plugin->compress->getArchiveContents($this);
+        return Plugin::getInstance()->compress->getArchiveContents($this);
     }
 
     /**
@@ -101,7 +102,7 @@ class Archive extends Model
         if (!$this->assetId) {
             return false;
         }
-        if ($this->getAsset() instanceof Asset) {
+        if ($this->getAsset()) {
             return true;
         }
 

@@ -16,6 +16,7 @@ use yii\db\ActiveQueryInterface;
  * @property mixed $fileAssets
  * @property integer id
  * @property integer assetId
+ * @property string filename
  * @property \DateTime dateLastAccessed
  * @property string hash
  */
@@ -46,10 +47,8 @@ class Archive extends ActiveRecord
     {
         parent::prepareForDb();
         $now = Db::prepareDateForDb(new DateTime());
-        if ($this->getIsNewRecord()) {
-            if (!isset($this->dateLastAccessed)) {
-                $this->dateLastAccessed = $now;
-            }
+        if ($this->getIsNewRecord() && !isset($this->dateLastAccessed)) {
+            $this->dateLastAccessed = $now;
         }
     }
 }

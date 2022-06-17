@@ -27,7 +27,7 @@ class CompressVariable
      * @param bool $lazy
      * @return ArchiveModel|null
      */
-    public function zip($query, $lazy = false, $filename = null)
+    public function zip($query, $lazy = false, $filename = null): ?ArchiveModel
     {
         return Compress::$plugin->compress->getArchiveModelForQuery($query, $lazy, $filename);
     }

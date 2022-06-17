@@ -58,6 +58,7 @@ class Install extends Migration
                     'dateUpdated' => $this->dateTime()->notNull(),
                     'dateLastAccessed' => $this->dateTime()->notNull(),
                     'uid' => $this->uid(),
+                    'filename' => $this->string(),
                     'assetId' => $this->integer(),
                     'hash' => $this->string()->notNull(),
                 ]

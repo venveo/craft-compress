@@ -15,6 +15,7 @@ use craft\base\Plugin;
 use craft\elements\Asset;
 use craft\events\ModelEvent;
 use craft\events\RegisterComponentTypesEvent;
+use craft\services\Gc;
 use craft\services\Utilities;
 use craft\web\twig\variables\CraftVariable;
 use venveo\compress\models\Settings;
@@ -34,26 +35,17 @@ use yii\base\Event;
  */
 class Compress extends Plugin
 {
-    // Static Properties
-    // =========================================================================
-
     /**
      * @var Compress
      */
     public static $plugin;
 
-    // Public Properties
-    // =========================================================================
-
     /**
      * @var string
      */
-    public string $schemaVersion = '1.0.0';
+    public string $schemaVersion = '4.0.1';
 
     public bool $hasCpSettings = true;
-
-    // Public Methods
-    // =========================================================================
 
     /**
      * @inheritdoc
@@ -62,10 +54,6 @@ class Compress extends Plugin
     {
         parent::init();
         self::$plugin = $this;
-
-        $this->setComponents([
-            'compress' => CompressService::class
-        ]);
 
         Event::on(
             CraftVariable::class,
@@ -99,6 +87,12 @@ class Compress extends Plugin
             }
         );
 
+        Event::on(Gc::class, Gc::EVENT_RUN, function () {
+            if ($this->getSettings()->deleteStaleArchivesHours) {
+                $this->compress->deleteStaleArchives(25);
+            }
+        });
+
 
         // Register our utility
         Event::on(
@@ -111,13 +105,25 @@ class Compress extends Plugin
 
     }
 
+    /**
+     * @inheritdoc
+     */
+    public static function config(): array
+    {
+        return [
+            'components' => [
+                'compress' => ['class' => CompressService::class]
+            ],
+        ];
+    }
+
     // Protected Methods
     // =========================================================================
 
     /**
      * @inheritdoc
      */
-    protected function createSettingsModel(): ?\craft\base\Model
+    protected function createSettingsModel(): Settings
     {
         return new Settings();
     }

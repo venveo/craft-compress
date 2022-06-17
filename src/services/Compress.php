@@ -14,7 +14,11 @@ use Craft;
 use craft\base\Component;
 use craft\elements\Asset;
 use craft\elements\db\AssetQuery;
+use craft\helpers\App;
+use craft\helpers\ArrayHelper;
 use craft\helpers\DateTimeHelper;
+use craft\helpers\Db;
+use craft\helpers\FileHelper;
 use craft\helpers\StringHelper;
 use craft\models\Volume;
 use venveo\compress\Compress as Plugin;
@@ -24,6 +28,8 @@ use venveo\compress\jobs\CreateArchive;
 use venveo\compress\models\Archive as ArchiveModel;
 use venveo\compress\records\Archive as ArchiveRecord;
 use venveo\compress\records\File as FileRecord;
+use yii\db\Exception;
+use yii\db\StaleObjectException;
 use ZipArchive;
 
 
@@ -52,7 +58,7 @@ class Compress extends Component
      * @param null $filename
      * @return ArchiveModel|null
      */
-    public function getArchiveModelForQuery($query, $lazy = false, $filename = null)
+    public function getArchiveModelForQuery($query, $lazy = false, $filename = null): ?ArchiveModel
     {
         // Get the assets and create a unique hash to represent them
         if ($query instanceof AssetQuery) {
@@ -64,19 +70,18 @@ class Compress extends Component
             return null;
         }
 
-        $hash = $this->getHashForAssets($assets);
+        $hash = $this->getHashForAssets($assets, $filename);
 
         // Make sure we haven't already hashed these assets. If so, return the
         // archive.
         $record = $this->getArchiveRecordByHash($hash);
-        if ($record instanceof ArchiveRecord && isset($record->assetId)) {
-            $asset = Craft::$app->assets->getAssetById($record->assetId);
+        if ($record && $record->assetId && $asset = Craft::$app->assets->getAssetById($record->assetId)) {
             return ArchiveModel::hydrateFromRecord($record, $asset);
         }
 
         // No existing record, let's create a new one
         if (!$record instanceof ArchiveRecord) {
-            $record = $this->createArchiveRecord($assets, null);
+            $record = $this->createArchiveRecord($assets, null, $filename);
         }
 
         // We'll use the cache to keep track of the status of the archive to
@@ -101,16 +106,16 @@ class Compress extends Component
 
         // We'll do it live!
         try {
-            return $this->createArchiveAsset($record, $filename);
+            return $this->createArchiveAsset($record);
         } catch (\Exception $e) {
             Craft::error($e->getMessage(), __METHOD__);
             return null;
         }
     }
 
-    public function createArchiveRecord($assets, $archiveAsset = null)
+    public function createArchiveRecord($assets, $archiveAsset = null, ?string $filename = null): ArchiveRecord
     {
-        $archive = $this->createArchiveRecords($assets, $archiveAsset);
+        $archive = $this->createArchiveRecords($assets, $archiveAsset, null, $filename);
         return $archive;
     }
 
@@ -135,10 +140,15 @@ class Compress extends Component
         $assetQuery->id($assetIds);
         $assets = $assetQuery->all();
         $assetName = $uuid . '.zip';
-        $filename = $uuid . '.zip';
-        // Create the SupportAttachment zip
-        $zipPath = Craft::$app->getPath()->getTempPath() . DIRECTORY_SEPARATOR . $filename;
+        if ($archiveRecord->filename) {
+            $assetName = $archiveRecord->filename . '.zip';
+        }
+        $tempFileName = $uuid . '.zip';
+        $tempFileName = \craft\helpers\FileHelper::sanitizeFilename($tempFileName, ['separator' => null]);
 
+        $tempDirectory = Craft::$app->getPath()->getTempPath() . DIRECTORY_SEPARATOR . 'compress';
+        FileHelper::createDirectory($tempDirectory);
+        $zipPath = $tempDirectory . DIRECTORY_SEPARATOR . $tempFileName;
         try {
             // Create the zip
             $zip = new ZipArchive();
@@ -147,19 +157,20 @@ class Compress extends Component
                 throw new CompressException('Cannot create zip file at: ' . $zipPath);
             }
 
-            $maxFileCount = Plugin::$plugin->getSettings()->maxFileCount;
+            $maxFileCount = Plugin::getInstance()->getSettings()->maxFileCount;
             if ($maxFileCount > 0 && count($assets) > $maxFileCount) {
                 throw new CompressException('Cannot create zip; maxFileCount exceeded.');
             }
 
-            $totalFileSize = 0;
-            $maxFileSize = Plugin::$plugin->getSettings()->maxFileSize;
+            $totalFileSize = array_reduce($assets, static fn($carry, $asset) => $carry + $asset->size, 0);
+            $maxFileSize = Plugin::getInstance()->getSettings()->maxFileSize;
+            if ($maxFileSize > 0 && $totalFileSize > $maxFileSize) {
+                throw new CompressException('Cannot create zip; maxFileSize exceeded.');
+            }
+            App::maxPowerCaptain();
+
             foreach ($assets as $asset) {
-                $totalFileSize += $asset->size;
-                if ($maxFileSize > 0 && $totalFileSize > $maxFileSize) {
-                    throw new CompressException('Cannot create zip; maxFileSize exceeded.');
-                }
-                $zip->addFile($asset->getCopyOfFile(), $asset->filename);
+                $zip->addFromString($asset->filename, $asset->getContents());
             }
 
             $zip->close();
@@ -171,13 +182,18 @@ class Compress extends Component
         }
         $stream = fopen($zipPath, 'rb');
 
-        $volumeHandle = Plugin::$plugin->getSettings()->defaultVolumeHandle;
+        $volumeHandle = Plugin::getInstance()->getSettings()->defaultVolumeHandle;
+        $volumeSubdirectory = Plugin::getInstance()->getSettings()->defaultVolumeSubdirectory;
         /** @var Volume $volume */
         $volume = Craft::$app->volumes->getVolumeByHandle($volumeHandle);
         if (!$volume instanceof Volume) {
             throw new CompressException('Default volume not set.');
         }
         $finalFilePath = $assetName;
+        if ($volumeSubdirectory) {
+            $finalFilePath = $volumeSubdirectory . DIRECTORY_SEPARATOR . $finalFilePath;
+        }
+        $finalFilePath = FileHelper::normalizePath($finalFilePath);
         $fs = $volume->getFs();
         $fs->writeFileFromStream($finalFilePath, $stream, []);
         unlink($zipPath);
@@ -190,22 +206,23 @@ class Compress extends Component
     }
 
     /**
-     * @param $zippedAssets
-     * @param $asset
-     * @param null $archiveRecord
+     * @param array $zippedAssets
+     * @param Asset $asset
+     * @param ArchiveRecord|null $archiveRecord
+     * @param string|null $filename
      * @return ArchiveRecord
-     * @throws \craft\errors\SiteNotFoundException
-     * @throws \yii\base\Exception
-     * @throws \yii\base\InvalidConfigException
-     * @throws \yii\db\Exception
+     * @throws Exception
      */
-    private function createArchiveRecords($zippedAssets, $asset, $archiveRecord = null)
+    private function createArchiveRecords(array $zippedAssets, ?Asset $asset = null, ?ArchiveRecord $archiveRecord = null, ?string $filename = null): ArchiveRecord
     {
-        if (!$archiveRecord instanceof ArchiveRecord) {
+        if (!$archiveRecord) {
             $archiveRecord = new ArchiveRecord();
             $archiveRecord->dateLastAccessed = DateTimeHelper::currentUTCDateTime();
             $archiveRecord->assetId = $asset->id ?? null;
-            $archiveRecord->hash = $this->getHashForAssets($zippedAssets);
+            $archiveRecord->hash = $this->getHashForAssets($zippedAssets, $filename);
+            if ($filename) {
+                $archiveRecord->filename = FileHelper::sanitizeFilename($filename, ['separator' => null]);
+            }
             $archiveRecord->save();
         }
 
@@ -240,10 +257,11 @@ class Compress extends Component
     /**
      * Creates a hash
      *
-     * @param $assets Asset[]
+     * @param array $assets Asset
+     * @param string|null $filename
      * @return string
      */
-    private function getHashForAssets($assets): string
+    private function getHashForAssets(array $assets, ?string $filename = null): string
     {
         $ids = [];
         foreach ($assets as $asset) {
@@ -253,6 +271,10 @@ class Compress extends Component
         }
         sort($ids);
         $hashKey = implode('', $ids);
+
+        if ($filename) {
+            $hashKey = $filename . $hashKey;
+        }
         return md5($hashKey);
     }
 
@@ -262,7 +284,7 @@ class Compress extends Component
      * @param $hash
      * @return ArchiveRecord|null
      */
-    private function getArchiveRecordByHash($hash)
+    private function getArchiveRecordByHash($hash): ?ArchiveRecord
     {
         return ArchiveRecord::findOne(['hash' => $hash]);
     }
@@ -272,7 +294,7 @@ class Compress extends Component
      *
      * @param Asset $asset
      */
-    public function handleAssetUpdated(Asset $asset)
+    public function handleAssetUpdated(Asset $asset): void
     {
         // Get the files this affects and the archives. We're just going to
         // delete the asset for the archive to prompt it to regenerate.
@@ -292,12 +314,13 @@ class Compress extends Component
             try {
                 Craft::$app->elements->deleteElementById($archiveAsset);
             } catch (\Throwable $e) {
-                Craft::error('Failed to delete an archive asset after a dependent file was deleted: ' . $e->getMessage(), __METHOD__);
+                Craft::error('Failed to delete an archive asset after a dependent file was deleted: ' . $e->getMessage(),
+                    __METHOD__);
                 Craft::error($e->getTraceAsString(), __METHOD__);
             }
         }
 
-        if (Plugin::$plugin->getSettings()->autoRegenerate) {
+        if (Plugin::getInstance()->getSettings()->autoRegenerate) {
             foreach ($archiveRecordUids as $recordUid) {
                 $cacheKey = 'Compress:InQueue:' . $recordUid;
                 // Make sure we don't run more than one job for the archive
@@ -323,18 +346,13 @@ class Compress extends Component
     public function getArchiveContents(ArchiveModel $archive): AssetQuery
     {
         $records = FileRecord::find()->where(['=', 'archiveId', $archive->id])->select(['assetId'])->asArray()->all();
-        // There has to be a better way to do this...
-        $ids = [];
-        /** FileRecord $record */
-        foreach ($records as $record) {
-            $ids[] = $record['assetId'];
-        }
-        return (new AssetQuery(Asset::class))->id($ids);
+        $ids = ArrayHelper::getColumn($records, 'assetId');
+        return Asset::find()->id($ids);
     }
 
     /**
-     * @param int $offset
-     * @param null $limit
+     * @param int|null $offset
+     * @param int|null $limit
      * @return array
      */
     public function getArchives(?int $offset = 0, ?int $limit = null): array
@@ -368,5 +386,37 @@ class Compress extends Component
         }
         return ArchiveModel::hydrateFromRecord($record);
     }
+
+
+    /**
+     * Deletes registered 404s that haven't been hit in a while
+     * @param null $limit
+     * @throws Throwable
+     * @throws StaleObjectException
+     */
+    public function deleteStaleArchives($limit = null): void
+    {
+        $hours = Plugin::getInstance()->getSettings()->deleteStaleArchivesHours;
+
+        $interval = DateTimeHelper::secondsToInterval($hours * 60 * 60);
+        $expire = DateTimeHelper::currentUTCDateTime();
+        $pastTime = $expire->sub($interval);
+
+        $query = ArchiveRecord::find()
+            ->andWhere(['<', 'dateLastAccessed', Db::prepareDateForDb($pastTime)]);
+
+        if ($limit) {
+            $query->limit($limit);
+        }
+        $archives = $query->all();
+        foreach($archives as $archive) {
+            $assetId = $archive->assetId;
+            if ($assetId) {
+                Craft::$app->elements->deleteElementById($assetId, null, null, true);
+            }
+            $archive->delete();
+        }
+    }
+
 
 }

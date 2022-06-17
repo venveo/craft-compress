@@ -2,7 +2,7 @@
     "name": "venveo/craft-compress",
     "description": "Create smart zip files from Craft assets on the fly",
     "type": "craft-plugin",
-    "version": "4.0.0",
+    "version": "4.0.1",
     "keywords": [
         "craft",
         "cms",
