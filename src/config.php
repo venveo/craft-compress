@@ -30,6 +30,12 @@ return [
      */
     'defaultVolumeHandle' => null,
 
+
+    /**
+     * An optional subdirectory to put zipped files in
+     */
+    'defaultVolumeSubdirectory' => '',
+
     /**
      * If set to true, queue jobs will be dispatched to regenerate an archive
      * if you delete one of its dependent files. Otherwise, this will occur
