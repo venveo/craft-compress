@@ -100,5 +100,6 @@ generates a lazy link to download all assets of a particular kind.
 to use them in Asset relation fields.
 set changes, a new archive asset will be created and the prior will not
 be automatically deleted.
+- When you provide a name for your archive, it's a good idea to ensure that name is unique to the files you're zipping up. Failure to do so could result in the file not being cached well and being constantly overwritten. 
 
 Brought to you by [Venveo](https://www.venveo.com)
