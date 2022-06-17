@@ -1,6 +1,6 @@
 # Compress Changelog
 
-## 4.0.1 - Unreleased
+## 4.0.1 - 2022-06-17
 ### Added
 - Added "Default Volume Subdirectory" settings to control where assets are stored.
 - Added ability to specify output archive name
