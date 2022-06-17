@@ -14,7 +14,10 @@ use Craft;
 use craft\base\Component;
 use craft\elements\Asset;
 use craft\elements\db\AssetQuery;
+use craft\helpers\App;
+use craft\helpers\ArrayHelper;
 use craft\helpers\DateTimeHelper;
+use craft\helpers\FileHelper;
 use craft\helpers\StringHelper;
 use craft\models\Volume;
 use venveo\compress\Compress as Plugin;
@@ -122,7 +125,7 @@ class Compress extends Component
      * @throws \craft\errors\VolumeException
      * @throws \Exception
      */
-    public function createArchiveAsset(ArchiveRecord $archiveRecord): ?ArchiveModel
+    public function createArchiveAsset(ArchiveRecord $archiveRecord, $filename = null): ?ArchiveModel
     {
         $uuid = StringHelper::UUID();
         $fileAssetRecords = $archiveRecord->fileAssets;
@@ -135,10 +138,14 @@ class Compress extends Component
         $assetQuery->id($assetIds);
         $assets = $assetQuery->all();
         $assetName = $uuid . '.zip';
-        $filename = $uuid . '.zip';
+        if (!$filename) {
+            $filename = $uuid . '.zip';
+        }
+        $filename = \craft\helpers\FileHelper::sanitizeFilename($filename, ['separator' => null]);
         // Create the SupportAttachment zip
-        $zipPath = Craft::$app->getPath()->getTempPath() . DIRECTORY_SEPARATOR . $filename;
-
+        $tempDirectory = Craft::$app->getPath()->getTempPath() . DIRECTORY_SEPARATOR . 'compress';
+        FileHelper::createDirectory($tempDirectory);
+        $zipPath = $tempDirectory . DIRECTORY_SEPARATOR . $filename;
         try {
             // Create the zip
             $zip = new ZipArchive();
@@ -147,19 +154,20 @@ class Compress extends Component
                 throw new CompressException('Cannot create zip file at: ' . $zipPath);
             }
 
-            $maxFileCount = Plugin::$plugin->getSettings()->maxFileCount;
+            $maxFileCount = Plugin::getInstance()->getSettings()->maxFileCount;
             if ($maxFileCount > 0 && count($assets) > $maxFileCount) {
                 throw new CompressException('Cannot create zip; maxFileCount exceeded.');
             }
 
-            $totalFileSize = 0;
-            $maxFileSize = Plugin::$plugin->getSettings()->maxFileSize;
+            $totalFileSize = array_reduce($assets, static fn($carry, $asset) => $carry + $asset->size, 0);
+            $maxFileSize = Plugin::getInstance()->getSettings()->maxFileSize;
+            if ($maxFileSize > 0 && $totalFileSize > $maxFileSize) {
+                throw new CompressException('Cannot create zip; maxFileSize exceeded.');
+            }
+            App::maxPowerCaptain();
+
             foreach ($assets as $asset) {
-                $totalFileSize += $asset->size;
-                if ($maxFileSize > 0 && $totalFileSize > $maxFileSize) {
-                    throw new CompressException('Cannot create zip; maxFileSize exceeded.');
-                }
-                $zip->addFile($asset->getCopyOfFile(), $asset->filename);
+                $zip->addFromString($asset->filename, $asset->getContents());
             }
 
             $zip->close();
@@ -171,13 +179,18 @@ class Compress extends Component
         }
         $stream = fopen($zipPath, 'rb');
 
-        $volumeHandle = Plugin::$plugin->getSettings()->defaultVolumeHandle;
+        $volumeHandle = Plugin::getInstance()->getSettings()->defaultVolumeHandle;
+        $volumeSubdirectory = Plugin::getInstance()->getSettings()->defaultVolumeSubdirectory;
         /** @var Volume $volume */
         $volume = Craft::$app->volumes->getVolumeByHandle($volumeHandle);
         if (!$volume instanceof Volume) {
             throw new CompressException('Default volume not set.');
         }
         $finalFilePath = $assetName;
+        if ($volumeSubdirectory) {
+            $finalFilePath = $volumeSubdirectory . DIRECTORY_SEPARATOR . $finalFilePath;
+        }
+        $finalFilePath = FileHelper::normalizePath($finalFilePath);
         $fs = $volume->getFs();
         $fs->writeFileFromStream($finalFilePath, $stream, []);
         unlink($zipPath);
@@ -323,13 +336,8 @@ class Compress extends Component
     public function getArchiveContents(ArchiveModel $archive): AssetQuery
     {
         $records = FileRecord::find()->where(['=', 'archiveId', $archive->id])->select(['assetId'])->asArray()->all();
-        // There has to be a better way to do this...
-        $ids = [];
-        /** FileRecord $record */
-        foreach ($records as $record) {
-            $ids[] = $record['assetId'];
-        }
-        return (new AssetQuery(Asset::class))->id($ids);
+        $ids = ArrayHelper::getColumn($records, 'assetId');
+        return Asset::find()->id($ids);
     }
 
     /**

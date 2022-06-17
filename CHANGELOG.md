@@ -1,5 +1,13 @@
 # Compress Changelog
 
+## 4.0.1 - 2022-06-17
+### Added
+- Added "Default Volume Subdirectory" settings to control where assets are stored.
+
+### Changed
+- Archives created in volumes without public URLs will now be proxied through the server to be fulfilled
+- Files are now streamed into archives instead of being copied to temporary files
+
 ## 4.0.0 - 2022-06-16
 ### Change
 - Compress now requires Craft 4

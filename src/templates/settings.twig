@@ -24,11 +24,20 @@
 {{ forms.selectField({
     first: true,
     label: 'Default Volume'|t('compress'),
-    instructions: 'Select the volume  for archive storage'|t('compress'),
+    instructions: 'When the Compress plugin is used, the ephemeral archives generated will be stored in this volume.'|t('compress'),
     id: 'defaultVolumeHandle',
     name: 'defaultVolumeHandle',
-    value: settings['defaultVolumeHandle'],
-    options: options
+    value: settings.defaultVolumeHandle,
+    options: options,
+}) }}
+
+{{ forms.textField({
+    name: 'defaultVolumeSubdirectory',
+    label: 'Default Upload Location'|t('compress'),
+    value: settings.defaultVolumeSubdirectory,
+    instructions: "Where archive assets should be stored (relative to **Default Volume**). If this volume doesn't have public URLs, the archives will be proxied through the server to the requester."|t('compress'),
+    placeholder: 'path/to/subfolder'|t('compress'),
+    errors: settings.getErrors('defaultVolumeSubdirectory')
 }) }}
 
 {{ forms.textField({
