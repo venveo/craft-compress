@@ -58,19 +58,20 @@ class Compress extends Component
      * @param null $filename
      * @return ArchiveModel|null
      */
-    public function getArchiveModelForQuery($query, $lazy = false, $filename = null): ?ArchiveModel
+    public function getArchiveModelForQuery(array $structure, $lazy = false, $filename = null): ?ArchiveModel
     {
-        // Get the assets and create a unique hash to represent them
-        if ($query instanceof AssetQuery) {
-            $assets = $query->all();
-        } elseif ($query instanceof \ArrayAccess) {
-            $assets = $query;
-        } else {
+        // we expect an associative array
+        if (!is_array($structure)) {
             Craft::error('Unexpected input provided for asset query', __METHOD__);
             return null;
         }
 
-        $hash = $this->getHashForAssets($assets, $filename);
+        // Get the assets and create a unique hash to represent them
+        $allAssets = [];
+        foreach ($structure as $items) {
+            $allAssets = array_merge($allAssets, $items);
+        }
+        $hash = $this->getHashForAssets($allAssets, $filename);
 
         // Make sure we haven't already hashed these assets. If so, return the
         // archive.
@@ -81,7 +82,7 @@ class Compress extends Component
 
         // No existing record, let's create a new one
         if (!$record instanceof ArchiveRecord) {
-            $record = $this->createArchiveRecord($assets, null, $filename);
+            $record = $this->createArchiveRecord($structure, null, $filename);
         }
 
         // We'll use the cache to keep track of the status of the archive to
@@ -106,16 +107,16 @@ class Compress extends Component
 
         // We'll do it live!
         try {
-            return $this->createArchiveAsset($record);
+            return $this->createArchiveAsset($structure, $record);
         } catch (\Exception $e) {
             Craft::error($e->getMessage(), __METHOD__);
             return null;
         }
     }
 
-    public function createArchiveRecord($assets, $archiveAsset = null, ?string $filename = null): ArchiveRecord
+    public function createArchiveRecord($structure, $archiveAsset = null, ?string $filename = null): ArchiveRecord
     {
-        $archive = $this->createArchiveRecords($assets, $archiveAsset, null, $filename);
+        $archive = $this->createArchiveRecords($structure, $archiveAsset, null, $filename);
         return $archive;
     }
 
@@ -127,18 +128,13 @@ class Compress extends Component
      * @throws \craft\errors\VolumeException
      * @throws \Exception
      */
-    public function createArchiveAsset(ArchiveRecord $archiveRecord): ?ArchiveModel
+    public function createArchiveAsset(array $structure, ArchiveRecord $archiveRecord): ?ArchiveModel
     {
-        $uuid = StringHelper::UUID();
-        $fileAssetRecords = $archiveRecord->fileAssets;
-        $assetIds = [];
-        /** @var FileRecord $fileAssetRecord */
-        foreach ($fileAssetRecords as $fileAssetRecord) {
-            $assetIds[] = $fileAssetRecord->assetId;
+        $allAssets = [];
+        foreach ($structure as $items) {
+            $allAssets = array_merge($allAssets, $items);
         }
-        $assetQuery = new AssetQuery(Asset::class);
-        $assetQuery->id($assetIds);
-        $assets = $assetQuery->all();
+        $uuid = StringHelper::UUID();
         $assetName = $uuid . '.zip';
         if ($archiveRecord->filename) {
             $assetName = $archiveRecord->filename . '.zip';
@@ -158,19 +154,25 @@ class Compress extends Component
             }
 
             $maxFileCount = Plugin::getInstance()->getSettings()->maxFileCount;
-            if ($maxFileCount > 0 && count($assets) > $maxFileCount) {
+            if ($maxFileCount > 0 && count($allAssets) > $maxFileCount) {
                 throw new CompressException('Cannot create zip; maxFileCount exceeded.');
             }
 
-            $totalFileSize = array_reduce($assets, static fn($carry, $asset) => $carry + $asset->size, 0);
+            $totalFileSize = array_reduce($allAssets, static fn($carry, $asset) => $carry + $asset->size, 0);
             $maxFileSize = Plugin::getInstance()->getSettings()->maxFileSize;
             if ($maxFileSize > 0 && $totalFileSize > $maxFileSize) {
                 throw new CompressException('Cannot create zip; maxFileSize exceeded.');
             }
             App::maxPowerCaptain();
 
-            foreach ($assets as $asset) {
-                $zip->addFromString($asset->filename, $asset->getContents());
+            foreach ($structure as $dirName => $assets) {
+                $zip->addEmptyDir($dirName);
+                foreach ($assets as $asset) {
+                    $zip->addFromString(
+                        $dirName . DIRECTORY_SEPARATOR . $asset->filename,
+                        $asset->getContents()
+                    );
+                }
             }
 
             $zip->close();
@@ -213,13 +215,18 @@ class Compress extends Component
      * @return ArchiveRecord
      * @throws Exception
      */
-    private function createArchiveRecords(array $zippedAssets, ?Asset $asset = null, ?ArchiveRecord $archiveRecord = null, ?string $filename = null): ArchiveRecord
+    private function createArchiveRecords(array $structure, ?Asset $asset = null, ?ArchiveRecord $archiveRecord = null, ?string $filename = null): ArchiveRecord
     {
+        $allAssets = [];
+        foreach ($structure as $items) {
+            $allAssets = array_merge($allAssets, $items);
+        }
+
         if (!$archiveRecord) {
             $archiveRecord = new ArchiveRecord();
             $archiveRecord->dateLastAccessed = DateTimeHelper::currentUTCDateTime();
             $archiveRecord->assetId = $asset->id ?? null;
-            $archiveRecord->hash = $this->getHashForAssets($zippedAssets, $filename);
+            $archiveRecord->hash = $this->getHashForAssets($allAssets, $filename);
             if ($filename) {
                 $archiveRecord->filename = FileHelper::sanitizeFilename($filename, ['separator' => null]);
             }
@@ -228,15 +235,14 @@ class Compress extends Component
 
         $event = new CompressEvent([
             'archiveRecord' => $archiveRecord,
-            'assets' => $zippedAssets
+            'assets' => $allAssets
         ]);
         $this->trigger(self::EVENT_BEFORE_CONFIGURE_ARCHIVE, $event);
 
-        $zippedAssets = $event->assets;
         $archiveRecord = $event->archiveRecord;
 
         $rows = [];
-        foreach ($zippedAssets as $zippedAsset) {
+        foreach ($allAssets as $zippedAsset) {
             $rows[] = [
                 $archiveRecord->id,
                 $zippedAsset->id
@@ -247,7 +253,7 @@ class Compress extends Component
 
         $event = new CompressEvent([
             'archiveRecord' => $archiveRecord,
-            'assets' => $zippedAssets
+            'assets' => $allAssets
         ]);
         $this->trigger(self::EVENT_AFTER_CONFIGURE_ARCHIVE, $event);
 
