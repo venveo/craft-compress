@@ -31,14 +31,22 @@ use venveo\compress\records\File as FileRecord;
 use yii\db\Exception;
 use yii\db\StaleObjectException;
 use ZipArchive;
+use RecursiveArrayIterator, RecursiveIteratorIterator;
+
+
+// https://www.lambda-out-loud.com/posts/flatten-arrays-php/#a-general-solution-for-arbitrarily-nested-arrays
+function flatten_array(array $array): array {
+    $recursiveArrayIterator = new RecursiveArrayIterator(
+        $array,
+        RecursiveArrayIterator::CHILD_ARRAYS_ONLY
+    );
+    $iterator = new RecursiveIteratorIterator($recursiveArrayIterator);
+    return iterator_to_array($iterator, false);
+}
 
 
 function getAssetsFlat($structure) {
-    $allAssets = [];
-    foreach ($structure as $items) {
-        $allAssets = array_merge($allAssets, $items);
-    }
-    return $allAssets;
+    return flatten_array($structure);
 }
 
 
@@ -69,7 +77,15 @@ class Compress extends Component
      */
     public function getArchiveModelForQuery(array $structure, $lazy = false, $filename = null): ?ArchiveModel
     {
-        // we expect an associative array
+        // we expect an associative array à la:
+        /* [
+            'dir' => [
+                'nested-dir' => [
+                    $asset1,
+                    $asset2
+                ],
+            ],
+        ] */
         if (!is_array($structure)) {
             Craft::error('Unexpected input provided for asset query', __METHOD__);
             return null;
@@ -136,7 +152,6 @@ class Compress extends Component
      */
     public function createArchiveAsset(array $structure, ArchiveRecord $archiveRecord): ?ArchiveModel
     {
-        $allAssets = getAssetsFlat($structure);
         $uuid = StringHelper::UUID();
         $assetName = $uuid . '.zip';
         if ($archiveRecord->filename) {
@@ -156,6 +171,7 @@ class Compress extends Component
                 throw new CompressException('Cannot create zip file at: ' . $zipPath);
             }
 
+            $allAssets = getAssetsFlat($structure);
             $maxFileCount = Plugin::getInstance()->getSettings()->maxFileCount;
             if ($maxFileCount > 0 && count($allAssets) > $maxFileCount) {
                 throw new CompressException('Cannot create zip; maxFileCount exceeded.');
@@ -168,15 +184,22 @@ class Compress extends Component
             }
             App::maxPowerCaptain();
 
-            foreach ($structure as $dirName => $assets) {
-                $zip->addEmptyDir($dirName);
-                foreach ($assets as $asset) {
-                    $zip->addFromString(
-                        $dirName . DIRECTORY_SEPARATOR . $asset->filename,
-                        $asset->getContents()
-                    );
+            function addFiles(ZipArchive $zip, array $structure, string $path) {
+                foreach ($structure as $dirName => $value) {
+                    if (is_array($value)) {
+                        $newPath = $path . DIRECTORY_SEPARATOR . $dirName;
+                        $zip->addEmptyDir($newPath);
+                        addFiles($zip, $value, $newPath);
+                    } else {
+                        $asset = $value;
+                        $zip->addFromString(
+                            $path . DIRECTORY_SEPARATOR . $asset->filename,
+                            $asset->getContents()
+                        );
+                    }
                 }
             }
+            addFiles($zip, $structure, '');
 
             $zip->close();
         } catch (\Exception $e) {
