@@ -33,6 +33,15 @@ use yii\db\StaleObjectException;
 use ZipArchive;
 
 
+function getAssetsFlat($structure) {
+    $allAssets = [];
+    foreach ($structure as $items) {
+        $allAssets = array_merge($allAssets, $items);
+    }
+    return $allAssets;
+}
+
+
 /**
  * @author    Venveo
  * @package   Compress
@@ -67,10 +76,7 @@ class Compress extends Component
         }
 
         // Get the assets and create a unique hash to represent them
-        $allAssets = [];
-        foreach ($structure as $items) {
-            $allAssets = array_merge($allAssets, $items);
-        }
+        $allAssets = getAssetsFlat($structure);
         $hash = $this->getHashForAssets($allAssets, $filename);
 
         // Make sure we haven't already hashed these assets. If so, return the
@@ -130,10 +136,7 @@ class Compress extends Component
      */
     public function createArchiveAsset(array $structure, ArchiveRecord $archiveRecord): ?ArchiveModel
     {
-        $allAssets = [];
-        foreach ($structure as $items) {
-            $allAssets = array_merge($allAssets, $items);
-        }
+        $allAssets = getAssetsFlat($structure);
         $uuid = StringHelper::UUID();
         $assetName = $uuid . '.zip';
         if ($archiveRecord->filename) {
@@ -217,10 +220,7 @@ class Compress extends Component
      */
     private function createArchiveRecords(array $structure, ?Asset $asset = null, ?ArchiveRecord $archiveRecord = null, ?string $filename = null): ArchiveRecord
     {
-        $allAssets = [];
-        foreach ($structure as $items) {
-            $allAssets = array_merge($allAssets, $items);
-        }
+        $allAssets = getAssetsFlat($structure);
 
         if (!$archiveRecord) {
             $archiveRecord = new ArchiveRecord();
