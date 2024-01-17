@@ -1,5 +1,9 @@
 # Compress Changelog
 
+## Unreleased
+### Fixed
+- Accept (and convert if necessary) `Illuminate\Support\Collection` and `array` in `craft.compress.zip` and `Compress::$plugin->compress->getArchiveModelForQuery()`
+
 ## 4.0.1 - 2022-06-17
 ### Added
 - Added "Default Volume Subdirectory" settings to control where assets are stored.
