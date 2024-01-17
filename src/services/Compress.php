@@ -21,6 +21,7 @@ use craft\helpers\Db;
 use craft\helpers\FileHelper;
 use craft\helpers\StringHelper;
 use craft\models\Volume;
+use Illuminate\Support\Collection;
 use venveo\compress\Compress as Plugin;
 use venveo\compress\errors\CompressException;
 use venveo\compress\events\CompressEvent;
@@ -52,22 +53,19 @@ class Compress extends Component
      */
     const EVENT_AFTER_CONFIGURE_ARCHIVE = 'EVENT_AFTER_CONFIGURE_ARCHIVE';
 
-    /**
-     * @param AssetQuery $query
-     * @param bool $lazy
-     * @param null $filename
-     * @return ArchiveModel|null
-     */
-    public function getArchiveModelForQuery($query, $lazy = false, $filename = null): ?ArchiveModel
+    public function getArchiveModelForQuery(
+        AssetQuery|Collection|array $query,
+        bool $lazy = false,
+        null|string $filename = null,
+    ): null|ArchiveModel
     {
         // Get the assets and create a unique hash to represent them
         if ($query instanceof AssetQuery) {
             $assets = $query->all();
-        } elseif ($query instanceof \ArrayAccess) {
-            $assets = $query;
+        } elseif ($query instanceof Collection) {
+            $assets = $query->toArray();
         } else {
-            Craft::error('Unexpected input provided for asset query', __METHOD__);
-            return null;
+            $assets = $query;
         }
 
         $hash = $this->getHashForAssets($assets, $filename);
