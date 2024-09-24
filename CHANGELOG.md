@@ -1,8 +1,12 @@
 # Compress Changelog
 
-## 5.0.0 - Unreleased
+## 5.0.0 - 2024-09-24
+
 ### Added
 - Support for Craft 5 (Thanks @bymayo)!
+
+### Changed
+- Minimum Craft version is now 5.0.0
 
 ### Fixed
 - Accept (and convert if necessary) `Illuminate\Support\Collection` and `array` in `craft.compress.zip` and `Compress::$plugin->compress->getArchiveModelForQuery()`
