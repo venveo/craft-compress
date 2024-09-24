@@ -1,6 +1,9 @@
 # Compress Changelog
 
-## Unreleased
+## 5.0.0 - Unreleased
+### Added
+- Support for Craft 5 (Thanks @bymayo)!
+
 ### Fixed
 - Accept (and convert if necessary) `Illuminate\Support\Collection` and `array` in `craft.compress.zip` and `Compress::$plugin->compress->getArchiveModelForQuery()`
 
