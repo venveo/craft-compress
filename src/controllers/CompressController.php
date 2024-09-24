@@ -81,7 +81,7 @@ class CompressController extends Controller
     /**
      * @param $archiveAsset
      * @return \craft\web\Response|\yii\console\Response|\yii\web\Response
-     * @throws RangeNotSatisfiableHttpException
+     * @throws RangeNotSatisfiableHttpException|\yii\base\InvalidRouteException
      */
     protected function getAssetResponse($archiveAsset) {
         if (!$archiveAsset) {

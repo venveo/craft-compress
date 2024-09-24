@@ -35,11 +35,11 @@ class CompressVariable
     /**
      * Get archive models
      *
-     * @param int $offset
-     * @param int $limit
+     * @param int|null $offset
+     * @param int|null $limit
      * @return array
      */
-    public function archives($offset = 0, $limit = 100): array
+    public function archives(?int $offset = 0, ?int $limit = 100): array
     {
         return Compress::$plugin->compress->getArchives($offset, $limit);
     }

@@ -22,14 +22,9 @@ use venveo\compress\records\Archive as ArchiveRecord;
  */
 class CreateArchive extends BaseJob
 {
-    // Public Properties
-    // =========================================================================
+    public string $archiveUid;
+    public string $cacheKey = '';
 
-    public $archiveUid;
-    public $cacheKey = '';
-
-    // Public Methods
-    // =========================================================================
 
     /**
      * @inheritdoc
@@ -63,9 +58,6 @@ class CreateArchive extends BaseJob
         \Craft::$app->cache->delete($this->cacheKey);
         \Craft::$app->cache->delete($this->cacheKey . ':jobId');
     }
-
-    // Protected Methods
-    // =========================================================================
 
     /**
      * @inheritdoc

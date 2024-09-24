@@ -381,7 +381,7 @@ class Compress extends Component
      * @param $uid
      * @return ArchiveModel|null
      */
-    public function getArchiveModelByUID($uid): ?ArchiveModel
+    public function getArchiveModelByUID(string $uid): ?ArchiveModel
     {
         $record = ArchiveRecord::find()->where(['=', 'uid', $uid])->one();
         if (!$record instanceof ArchiveRecord) {
@@ -420,6 +420,5 @@ class Compress extends Component
             $archive->delete();
         }
     }
-
 
 }
