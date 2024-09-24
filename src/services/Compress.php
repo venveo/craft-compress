@@ -168,7 +168,7 @@ class Compress extends Component
             App::maxPowerCaptain();
 
             foreach ($assets as $asset) {
-                $zip->addFromString($asset->filename, $asset->getContents());
+                $zip->addFromString($asset->filename, file_get_contents($asset->url));
             }
 
             $zip->close();
