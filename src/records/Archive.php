@@ -10,22 +10,22 @@ use DateTime;
 use yii\db\ActiveQueryInterface;
 
 /**
- * @property int|null ownerId
- * @property \yii\db\ActiveQueryInterface $site
- * @property \yii\db\ActiveQueryInterface $asset
+ * @property int|null $ownerId
+ * @property ActiveQueryInterface $site
+ * @property ActiveQueryInterface $asset
  * @property mixed $fileAssets
- * @property integer id
- * @property integer assetId
- * @property string filename
- * @property \DateTime dateLastAccessed
- * @property string hash
+ * @property integer $id
+ * @property integer $assetId
+ * @property string $filename
+ * @property \DateTime $dateLastAccessed
+ * @property string $hash
  */
 class Archive extends ActiveRecord
 {
     /*
      * @inheritdoc
      */
-    public static function tableName()
+    public static function tableName(): string
     {
         return '{{%compress_archives}}';
     }

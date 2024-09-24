@@ -45,14 +45,20 @@ class Compress extends Component
      * Called right before saving the archive records. You may take this
      * opportunity to modify the list of files being stored in the archive
      */
-    const EVENT_BEFORE_CONFIGURE_ARCHIVE = 'EVENT_BEFORE_CONFIGURE_ARCHIVE';
+    public const EVENT_BEFORE_CONFIGURE_ARCHIVE = 'EVENT_BEFORE_CONFIGURE_ARCHIVE';
 
     /**
      * Called right after successfully saving the Archive record and its File
      * records.
      */
-    const EVENT_AFTER_CONFIGURE_ARCHIVE = 'EVENT_AFTER_CONFIGURE_ARCHIVE';
+    public const EVENT_AFTER_CONFIGURE_ARCHIVE = 'EVENT_AFTER_CONFIGURE_ARCHIVE';
 
+    /**
+     * @param AssetQuery|Collection|array $query
+     * @param bool $lazy
+     * @param string|null $filename
+     * @return ArchiveModel|null
+     */
     public function getArchiveModelForQuery(
         AssetQuery|Collection|array $query,
         bool $lazy = false,
@@ -69,7 +75,6 @@ class Compress extends Component
         }
 
         $hash = $this->getHashForAssets($assets, $filename);
-
         // Make sure we haven't already hashed these assets. If so, return the
         // archive.
         $record = $this->getArchiveRecordByHash($hash);
@@ -387,16 +392,16 @@ class Compress extends Component
 
 
     /**
-     * Deletes registered 404s that haven't been hit in a while
      * @param null $limit
      * @throws Throwable
      * @throws StaleObjectException
+     * @throws \Throwable
      */
     public function deleteStaleArchives($limit = null): void
     {
         $hours = Plugin::getInstance()->getSettings()->deleteStaleArchivesHours;
 
-        $interval = DateTimeHelper::secondsToInterval($hours * 60 * 60);
+        $interval = DateTimeHelper::toDateInterval($hours * 60 * 60);
         $expire = DateTimeHelper::currentUTCDateTime();
         $pastTime = $expire->sub($interval);
 

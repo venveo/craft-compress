@@ -14,15 +14,16 @@ use yii\db\ActiveQueryInterface;
  * @property User $owner
  * @property Asset $asset
  * @property Archive $archive
- * @property integer id
- * @property integer archiveId
+ * @property integer $id
+ * @property integer $archiveId
+ * @property int $assetId [int]
  */
 class File extends ActiveRecord
 {
     /*
      * @inheritdoc
      */
-    public static function tableName()
+    public static function tableName(): string
     {
         return '{{%compress_files}}';
     }
