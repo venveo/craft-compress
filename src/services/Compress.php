@@ -139,15 +139,13 @@ class Compress extends Component
         foreach ($fileAssetRecords as $fileAssetRecord) {
             $assetIds[] = $fileAssetRecord->assetId;
         }
-        $assetQuery = new AssetQuery(Asset::class);
-        $assetQuery->id($assetIds);
-        $assets = $assetQuery->all();
+        $assets = Asset::find()->id($assetIds)->all();
         $assetName = $uuid . '.zip';
         if ($archiveRecord->filename) {
             $assetName = $archiveRecord->filename . '.zip';
         }
         $tempFileName = $uuid . '.zip';
-        $tempFileName = \craft\helpers\FileHelper::sanitizeFilename($tempFileName, ['separator' => null]);
+        $tempFileName = FileHelper::sanitizeFilename($tempFileName, ['separator' => null]);
 
         $tempDirectory = Craft::$app->getPath()->getTempPath() . DIRECTORY_SEPARATOR . 'compress';
         FileHelper::createDirectory($tempDirectory);
@@ -172,8 +170,9 @@ class Compress extends Component
             }
             App::maxPowerCaptain();
 
+            /** @var Asset $asset */
             foreach ($assets as $asset) {
-                $zip->addFromString($asset->filename, file_get_contents($asset->url));
+                $zip->addFromString($asset->filename, $asset->getContents());
             }
 
             $zip->close();
